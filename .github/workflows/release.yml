@@ -1,0 +1,260 @@
+name: Release
+
+on:
+  workflow_run:
+    workflows: ["Tests"]
+    branches: [main]
+    types: 
+      - completed
+  workflow_dispatch:  # Allows manual triggering
+    inputs:
+      version:
+        description: 'Release version (e.g., 1.0.0)'
+        required: true
+        default: '1.0.0'
+      prerelease:
+        description: 'Mark as pre-release'
+        required: false
+        default: false
+        type: boolean
+      force_release:
+        description: 'Force release even if tests failed'
+        required: false
+        default: false
+        type: boolean
+
+jobs:
+  # Build and create release
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    # Only run if tests passed OR manual trigger
+    if: >
+      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success') ||
+      (github.event_name == 'workflow_dispatch')
+      
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # Get full history for changelog
+        
+    - name: Setup Perl
+      uses: shogo82148/actions-setup-perl@v1
+      with:
+        perl-version: '5.36'
+        install-modules-with: cpanm
+        install-modules: |
+          ExtUtils::MakeMaker
+          Archive::Tar
+          CPAN::Meta
+          Module::Build
+          
+    - name: Get version from input or System.pm
+      id: get_version
+      run: |
+        if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+          # Manual trigger - use provided version
+          VERSION="${{ github.event.inputs.version }}"
+          echo "version=v${VERSION}" >> $GITHUB_OUTPUT
+          echo "version_number=${VERSION}" >> $GITHUB_OUTPUT
+          echo "is_manual=true" >> $GITHUB_OUTPUT
+        else
+          # Automatic trigger after CI - extract version from System.pm
+          VERSION=$(grep "our \$VERSION = " System.pm | sed "s/.*our \\\$VERSION = '\\([^']*\\)'.*/\\1/")
+          if [ -z "$VERSION" ]; then
+            echo "Error: Could not extract version from System.pm"
+            exit 1
+          fi
+          echo "version=v${VERSION}" >> $GITHUB_OUTPUT
+          echo "version_number=${VERSION}" >> $GITHUB_OUTPUT
+          echo "is_manual=false" >> $GITHUB_OUTPUT
+        fi
+        
+        echo "Detected version: $VERSION"
+        
+    - name: Check if release already exists
+      id: check_release
+      run: |
+        VERSION="${{ steps.get_version.outputs.version }}"
+        if gh release view "${VERSION}" >/dev/null 2>&1; then
+          echo "Release ${VERSION} already exists!"
+          echo "exists=true" >> $GITHUB_OUTPUT
+          if [ "${{ steps.get_version.outputs.is_manual }}" = "false" ]; then
+            echo "Skipping automatic release creation for existing version"
+            exit 1
+          else
+            echo "Manual trigger - will update existing release"
+          fi
+        else
+          echo "exists=false" >> $GITHUB_OUTPUT
+        fi
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        
+    - name: Update version in System.pm (manual trigger only)
+      if: steps.get_version.outputs.is_manual == 'true'
+      run: |
+        VERSION_NUMBER="${{ steps.get_version.outputs.version_number }}"
+        sed -i "s/our \$VERSION = '[^']*'/our \$VERSION = '${VERSION_NUMBER}'/" System.pm
+        
+    - name: Create lib structure for CPAN distribution
+      run: |
+        mkdir -p lib/Filter
+        mkdir -p lib/System/Collections
+        mkdir -p lib/System/Diagnostics/Contracts
+        mkdir -p lib/System/DirectoryServices/AccountManagement
+        mkdir -p lib/System/IO
+        mkdir -p lib/System/Linq
+        mkdir -p lib/System/Threading
+        mkdir -p lib/System/Windows/Forms
+        
+        # Copy main modules
+        cp System.pm lib/
+        cp CSharp.pm lib/
+        cp Filter/CSharp.pm lib/Filter/
+        
+        # Copy all System modules preserving structure
+        cp -r System/* lib/System/
+        
+    - name: Generate META files
+      run: |
+        perl Makefile.PL
+        make metafile
+        
+    - name: Create distribution tarball
+      run: |
+        DIST_NAME="Perl-NetFramework-${{ steps.get_version.outputs.version_number }}"
+        
+        # Create distribution directory
+        mkdir -p "${DIST_NAME}"
+        
+        # Copy all necessary files
+        cp -r lib "${DIST_NAME}/"
+        cp -r tests "${DIST_NAME}/"
+        cp Makefile.PL "${DIST_NAME}/"
+        cp MANIFEST "${DIST_NAME}/"
+        cp cpanfile "${DIST_NAME}/"
+        cp README.md "${DIST_NAME}/"
+        cp LICENSE "${DIST_NAME}/"
+        cp CLAUDE.md "${DIST_NAME}/"
+        cp run_all_tests.pl "${DIST_NAME}/"
+        
+        # Create both .tar.gz (CPAN standard) and .zip (GitHub friendly)
+        tar -czf "${DIST_NAME}.tar.gz" "${DIST_NAME}"
+        zip -r "${DIST_NAME}.zip" "${DIST_NAME}"
+        
+        # Also create a source distribution using make
+        make dist
+        
+        echo "dist_name=${DIST_NAME}" >> $GITHUB_ENV
+        
+    - name: Generate release notes
+      id: release_notes
+      run: |
+        VERSION="${{ steps.get_version.outputs.version }}"
+        
+        # Generate changelog from git log since last tag
+        LAST_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+        
+        if [ -n "$LAST_TAG" ]; then
+          CHANGELOG=$(git log --pretty=format:"- %s (%h)" ${LAST_TAG}..HEAD)
+        else
+          CHANGELOG=$(git log --pretty=format:"- %s (%h)" --max-count=10)
+        fi
+        
+        cat > release_notes.md << EOF
+        ## 🐪 Perl-NetFramework ${VERSION}
+        
+        A comprehensive clone of the .NET Framework Base Class Library (BCL) implemented in pure Perl.
+        
+        ### ✨ Key Features
+        - **🎭 Revolutionary C# Syntax Filter**: Write pure C# syntax that transforms to valid Perl
+        - **📦 Complete BCL Implementation**: Full .NET-style object hierarchy and APIs
+        - **🔍 LINQ-to-Objects**: Comprehensive LINQ implementation with lazy evaluation
+        - **⚡ Exception Handling**: Complete try/catch/finally with custom exception types
+        - **🧵 Threading Support**: Basic threading capabilities
+        - **🖥️ GUI Components**: Windows-style MessageBox using Tk backend
+        
+        ### 📊 What's Included
+        - **Core Framework**: System.pm, CSharp.pm, Filter::CSharp
+        - **Base Class Library**: 60+ modules covering Collections, LINQ, I/O, Diagnostics, Threading
+        - **Test Suite**: Comprehensive tests with ${GITHUB_REF_NAME} CI/CD pipeline
+        - **CPAN Ready**: Makefile.PL, META files, and proper packaging
+        
+        ### 📦 Installation
+        \`\`\`bash
+        # Download and extract the archive, then:
+        perl Makefile.PL
+        make test
+        make install
+        \`\`\`
+        
+        ### 🚀 Quick Start
+        \`\`\`perl
+        use Filter::CSharp;
+        
+        namespace MyApp {
+            public class Example {
+                public string Name { get; set; }
+                
+                public Example(string name) {
+                    this.Name = name;
+                }
+            }
+        }
+        \`\`\`
+        
+        ### 📋 Changes in this Release
+        ${CHANGELOG}
+        
+        ### 📥 Download Options
+        - **Perl-NetFramework-${{ steps.get_version.outputs.version_number }}.tar.gz**: CPAN-compatible distribution
+        - **Perl-NetFramework-${{ steps.get_version.outputs.version_number }}.zip**: Windows-friendly archive
+        - **Source**: Complete source code with Git history
+        EOF
+        
+    - name: Create or Update GitHub Release
+      run: |
+        VERSION="${{ steps.get_version.outputs.version }}"
+        VERSION_NUMBER="${{ steps.get_version.outputs.version_number }}"
+        PRERELEASE="${{ github.event.inputs.prerelease == 'true' }}"
+        
+        if [ "${{ steps.check_release.outputs.exists }}" = "true" ]; then
+          echo "Updating existing release ${VERSION}"
+          gh release upload "${VERSION}" \
+            "${{ env.dist_name }}.tar.gz" \
+            "${{ env.dist_name }}.zip" \
+            "Perl-NetFramework-${VERSION_NUMBER}.tar.gz" \
+            --clobber
+          
+          gh release edit "${VERSION}" \
+            --notes-file release_notes.md
+        else
+          echo "Creating new release ${VERSION}"
+          PRERELEASE_FLAG=""
+          if [ "${PRERELEASE}" = "true" ]; then
+            PRERELEASE_FLAG="--prerelease"
+          fi
+          
+          gh release create "${VERSION}" \
+            "${{ env.dist_name }}.tar.gz" \
+            "${{ env.dist_name }}.zip" \
+            "Perl-NetFramework-${VERSION_NUMBER}.tar.gz" \
+            --title "Perl-NetFramework ${VERSION}" \
+            --notes-file release_notes.md \
+            ${PRERELEASE_FLAG}
+        fi
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        
+    - name: Upload distribution artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: perl-netframework-${{ steps.get_version.outputs.version_number }}
+        path: |
+          ${{ env.dist_name }}.tar.gz
+          ${{ env.dist_name }}.zip
+          Perl-NetFramework-${{ steps.get_version.outputs.version_number }}.tar.gz
+        retention-days: 90

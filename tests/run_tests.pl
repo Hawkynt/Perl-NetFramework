@@ -25,11 +25,11 @@ print colored("Perl-NetFramework Test Runner\n", 'bold blue');
 print colored("=" x 40, 'blue') . "\n\n";
 
 my @test_files;
-my $test_dir = File::Spec->catdir('.', 'tests');
+my $test_dir = '.';
 
-# Find all test files
+# Find all test files (excluding run_tests.pl itself)
 find(sub {
-    if ($File::Find::name =~ /\Q$pattern\E$/ && -f $_) {
+    if ($_ =~ /\.pl$/ && -f $_ && $_ ne 'run_tests.pl') {
         push @test_files, $File::Find::name;
     }
 }, $test_dir);
@@ -57,7 +57,7 @@ my $failed_files = [];
 for my $test_file (@test_files) {
     print colored("Running: $test_file\n", 'cyan');
     
-    my $cmd = "perl -I. \"$test_file\"";
+    my $cmd = "perl -I.. \"$test_file\"";
     my $output = `$cmd 2>&1`;
     my $exit_code = $? >> 8;
     

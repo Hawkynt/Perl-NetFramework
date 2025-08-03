@@ -1,6 +1,7 @@
 package System; {
   use base 'Exporter';
   our @EXPORT=qw(true false null try catch finally throw switch case default);
+  our $VERSION = '1.00';
 
   use CSharp;
   

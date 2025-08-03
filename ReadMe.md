@@ -2,6 +2,10 @@
 
 [![License](https://img.shields.io/badge/License-GPL_3.0-blue)](https://licenses.nuget.org/GPL-3.0-or-later)
 ![Language](https://img.shields.io/github/languages/top/Hawkynt/Perl-NetFramework?color=purple)
+[![Tests](https://github.com/Hawkynt/Perl-NetFramework/actions/workflows/tests.yml/badge.svg)](https://github.com/Hawkynt/Perl-NetFramework/actions/workflows/tests.yml)
+[![Release](https://github.com/Hawkynt/Perl-NetFramework/actions/workflows/release.yml/badge.svg)](https://github.com/Hawkynt/Perl-NetFramework/actions/workflows/release.yml)
+[![GitHub release](https://img.shields.io/github/v/release/Hawkynt/Perl-NetFramework)](https://github.com/Hawkynt/Perl-NetFramework/releases/latest)
+[![Downloads](https://img.shields.io/github/downloads/Hawkynt/Perl-NetFramework/total)](https://github.com/Hawkynt/Perl-NetFramework/releases)
 
 > 🚀 A comprehensive clone of the .NET Framework Base Class Library (BCL) implemented in pure Perl.
 
@@ -16,6 +20,19 @@ Perl-NetFramework brings the familiar .NET programming model to Perl, providing 
 - **🔀 Switch Statements**: C#-style switch/case/default constructs
 - **🎯 Constants**: `true`, `false`, and `null` constants for cleaner code
 - **🏗️ Type System**: Comprehensive object-oriented hierarchy starting from `System::Object`
+
+### 🎭 Revolutionary C# Syntax Filter (`Filter::CSharp`)
+**The game-changing feature**: Write pure C# syntax that gets automatically transformed to valid Perl!
+
+- **📋 Class Declarations**: Use `namespace MyApp { public class User { ... } }` syntax
+- **🔐 Access Modifiers**: Support for `public`, `private`, `protected`, `internal` keywords  
+- **⚡ Properties**: Auto-implemented properties with `{ get; set; }` syntax
+- **🏗️ Constructors/Destructors**: Natural C#-style `ctor()` and `~ctor()` methods
+- **📊 Fields**: Static/instance fields with proper type declarations
+- **🔄 `using` Statements**: Resource management with automatic disposal
+- **🔁 `foreach` Loops**: LINQ-compatible enumeration syntax
+- **🏷️ `var` Declarations**: Type inference for cleaner code
+- **➡️ Lambda Expressions**: Arrow function syntax `()=>{}` and `$x=>{}`
 
 ### 📦 Collections and LINQ
 - **🗂️ Collections**: Hashtable, Array, and enumerable collections with .NET-compatible APIs
@@ -105,7 +122,41 @@ Perl-NetFramework/
 
 ## 💡 Usage Examples
 
-### 🧵 Basic Object Creation and String Operations
+### 🎭 C# Syntax Transformation (Filter::CSharp)
+
+**Write this C# code:**
+```csharp
+use Filter::CSharp;
+
+namespace MyApp {
+    public class UserService {
+        private string name;
+        public int Age { get; set; }
+        
+        public UserService(string userName) {
+            this.name = userName;
+            this.Age = 0;
+        }
+        
+        public string GetWelcomeMessage() {
+            return "Hello, " + this.name + "! Age: " + this.Age;
+        }
+        
+        public static void ProcessUsers() {
+            var users = new System::Array("Alice", "Bob", "Charlie");
+            foreach (var user in users) {
+                var service = new UserService(user);
+                service.Age = 25;
+                print service.GetWelcomeMessage();
+            }
+        }
+    }
+}
+```
+
+**Gets automatically transformed to valid Perl** with full .NET BCL integration!
+
+### 🧵 Traditional Perl Syntax
 ```perl
 use System;
 
@@ -167,24 +218,56 @@ switch $value,
 
 ## 📦 Installation and Dependencies
 
-This is a pure Perl implementation requiring no compilation. Simply ensure the modules are in your Perl path.
+### 📥 Quick Install (Recommended)
+
+**Download the latest release:**
+```bash
+# Download from GitHub Releases
+wget https://github.com/Hawkynt/Perl-NetFramework/releases/latest/download/Perl-NetFramework-1.00.tar.gz
+tar -xzf Perl-NetFramework-1.00.tar.gz
+cd Perl-NetFramework-1.00
+
+# Install using standard Perl tools
+perl Makefile.PL
+make test
+make install
+```
+
+**Or use cpanm (if published to CPAN):**
+```bash
+cpanm Perl::NetFramework
+```
+
+### 🔧 Development Install
+```bash
+# Clone the repository for development
+git clone https://github.com/Hawkynt/Perl-NetFramework.git
+cd Perl-NetFramework
+
+# Install dependencies
+cpanm --installdeps .
+
+# Run tests
+perl tests/run_tests.pl
+# Or comprehensive test runner
+perl run_all_tests.pl
+```
 
 ### 🔧 Core Dependencies
-- 🐪 Perl 5.x (tested with modern Perl versions)
-- 📦 Core modules: strict, warnings, Exporter, Scalar::Util
+- 🐪 **Perl 5.10.1+** (tested with Perl 5.30-5.36)
+- 📦 **Core modules**: strict, warnings, Exporter, Scalar::Util, Filter::Simple
 
 ### 🎨 Optional Dependencies
 - **🖥️ Tk**: Required for GUI components (MessageBox)
 - **🎨 Image::Xbm**: For icon processing in message boxes
+- **🌈 Term::ANSIColor**: For colored test output
 
-### 🚀 Installation
-```bash
-# Clone the repository
-git clone https://github.com/Hawkynt/Perl-NetFramework.git
+### 📦 Available Downloads
+- **📦 .tar.gz**: CPAN-compatible distribution
+- **📁 .zip**: Windows-friendly archive  
+- **📄 Source**: Complete source with Git history
 
-# Add to Perl path or copy modules to desired location
-export PERL5LIB=$PERL5LIB:/path/to/Perl-NetFramework
-```
+Visit our [**Releases Page**](https://github.com/Hawkynt/Perl-NetFramework/releases) for all download options.
 
 ## 🔧 Development and Testing
 
@@ -244,6 +327,31 @@ This project follows .NET naming conventions and design patterns. When contribut
 3. 🏷️ Add package name aliases for convenience
 4. 🏗️ Follow the established object hierarchy
 5. 📝 Include inline documentation for complex methods
+
+### 🚀 Creating Releases
+
+For maintainers, releases are fully automated and triggered by successful CI runs:
+
+```bash
+# Prepare a new release (runs CI, then auto-creates release when tests pass)
+./create_release.sh 1.2.0
+
+# Prepare a pre-release
+./create_release.sh 1.2.0-beta1 --prerelease
+```
+
+**Automated Release Process:**
+1. 📝 **Version Update**: Script updates version in `System.pm` and commits
+2. 🧪 **CI Trigger**: Push triggers comprehensive tests across Perl 5.30-5.36
+3. 🚀 **Auto-Release**: When CI passes, release workflow automatically:
+   - Creates CPAN-compatible distribution packages
+   - Generates changelog from git commits  
+   - Publishes GitHub Release with download artifacts
+   - Provides both .tar.gz (CPAN) and .zip (Windows) formats
+
+**Manual Release Options:**
+- GitHub Actions UI: Trigger release workflow manually with custom version
+- Force release even if some tests fail (for emergency releases)
 
 ## 📄 License
 
