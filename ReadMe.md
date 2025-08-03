@@ -200,7 +200,14 @@ System::String::Test();  # Run string tests
 - **🛡️ Exception Safety**: Comprehensive exception handling throughout the framework
 - **🏷️ Namespace Aliasing**: Short aliases available (e.g., `String` instead of `System::String`)
 
-## 🤝 Contributing
+## 🤝 Sister Projects
+
+This project is part of a multi-language effort to bring .NET Framework functionality to various programming languages:
+
+- **🐪 [Perl-NetFramework](https://github.com/Hawkynt/Perl-NetFramework)** - .NET BCL implementation in Perl
+- **🐘 [PHP-NetFramework](https://github.com/Hawkynt/PHP-NetFramework)** - .NET BCL implementation in PHP
+
+## 📝 Contributing
 
 This project follows .NET naming conventions and design patterns. When contributing:
 
