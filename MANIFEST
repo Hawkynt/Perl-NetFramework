@@ -84,4 +84,14 @@ tests/System/IO/File.pl
 tests/System/Linq/Linq.pl
 tests/System/Object.pl
 tests/System/String.pl
+tests/Filter/CSharp.pl
+tests/Filter/CSharp_Integration.pl
+tests/Filter/CSharp_Working.pl
+tests/Filter/CSharp_Constructor.pl
+tests/Filter/CSharp_Foreach.pl
+tests/Filter/CSharp_Comprehensive.pl
+tests/Filter/CSharp_LineNumbers.pl
+tests/System/Types.pl
+tests/System/Text/RegularExpressions.pl
 .github/workflows/tests.yml
+.github/workflows/release.yml

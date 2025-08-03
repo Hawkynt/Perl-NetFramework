@@ -267,40 +267,123 @@ perl run_all_tests.pl
 - **📁 .zip**: Windows-friendly archive  
 - **📄 Source**: Complete source with Git history
 
-Visit our [**Releases Page**](https://github.com/Hawkynt/Perl-NetFramework/releases) for all download options.
+Visit my [**Releases Page**](https://github.com/Hawkynt/Perl-NetFramework/releases) for all download options.
 
 ## 🔧 Development and Testing
 
 ### 🧪 Running the Test Suite
-The project includes a comprehensive test suite using Test::More:
+
+The project includes a comprehensive test suite organized into two main categories:
+
+#### **System Framework Tests**
+Tests for the core .NET BCL implementation:
 ```bash
-# Run all tests
+# Run all System framework tests
+perl -I. tests/System/String.pl      # String operations
+perl -I. tests/System/Array.pl       # Array functionality  
+perl -I. tests/System/Types.pl       # Decimal, TimeSpan, String comprehensive tests
+perl -I. tests/System/Collections/Hashtable.pl  # Hashtable operations
+perl -I. tests/System/Text/RegularExpressions.pl  # Regex support
+```
+
+#### **Filter::CSharp Tests**
+Tests for the C# syntax transformation:
+```bash
+# Run Filter::CSharp transformation tests
+perl -I. tests/Filter/CSharp_Working.pl        # Basic working features
+perl -I. tests/Filter/CSharp_Constructor.pl    # Constructor/destructor syntax
+perl -I. tests/Filter/CSharp_Foreach.pl        # foreach loop transformation
+perl -I. tests/Filter/CSharp_LineNumbers.pl    # Line number preservation
+perl -I. tests/Filter/CSharp_Comprehensive.pl  # Full syntax coverage
+```
+
+#### **Automated Test Runner**
+```bash
+# Run complete test suite with colored output
 cd tests
 perl run_tests.pl
 
-# Run with detailed output
-perl run_tests.pl --verbose
-
-# Run specific test patterns
-perl run_tests.pl --pattern "String*"
-perl run_tests.pl --pattern "System/Collections/*"
+# Individual test categories
+perl run_tests.pl --verbose           # Detailed output
+perl run_tests.pl --pattern "Filter*" # Filter tests only
+perl run_tests.pl --pattern "System*" # System tests only
 ```
 
-### 📊 Test Coverage
-The test suite provides comprehensive coverage for:
-- **Core Types**: Object, String, Array operations
-- **Collections**: Hashtable, enumeration, LINQ integration  
-- **LINQ Operations**: Where, Select, OrderBy, First/Last, Any/All
-- **I/O Operations**: File reading, writing, manipulation
-- **Diagnostics**: Stopwatch timing functionality
-- **Exception Handling**: Proper error conditions and edge cases
+### 📊 Current Test Status
 
-### ✅ Compilation Check
-Verify syntax and compilation:
+#### ✅ **Fully Working Components**
+- **Filter::CSharp Basic Syntax**: var, new, namespaces, constants ✅
+- **Line Number Preservation**: Debugging maintains correct line numbers ✅
+- **System::Decimal**: Full arithmetic, comparisons, ToString ✅
+- **Basic foreach Loops**: C# foreach syntax transformation ✅
+- **Core String Operations**: Most string methods working ✅
+
+#### ⚠️ **Known Issues & Limitations**
+
+**Filter::CSharp Limitations:**
+- ❌ **Method Parameters**: Type annotations cause syntax errors
+- ❌ **this Keyword**: Not transformed properly in methods
+- ❌ **Auto-Properties**: `{ get; set; }` syntax has parsing issues
+- ❌ **Constructor Parameters**: Complex constructors fail
+- ❌ **Destructor Syntax**: `~ctor` not implemented
+
+**System Framework Issues:**
+- ❌ **TimeSpan Static Methods**: `FromDays`/`FromHours` numeric conversion issues
+- ❌ **String.Substring**: Position parameters not working correctly  
+- ❌ **Array.Get Method**: Method not implemented
+- ❌ **System::IO::Directory**: `EnumerateFiles` method missing
+- ❌ **System::Text::RegularExpressions**: Module not implemented
+
+### 🧪 Testing Methodology
+
+#### **Filter::CSharp Testing Strategy**
+Uses behavioral testing with temporary files and `MO=Deparse` compilation:
+```perl
+# Example test approach
+my ($fh, $temp_file) = tempfile(SUFFIX => '.pl', UNLINK => 1);
+print $fh $csharp_code;
+close $fh;
+
+my $output = `perl -I. "$temp_file" 2>&1`;
+# Test actual execution behavior, not just regex patterns
+```
+
+#### **System Framework Testing**
+Traditional Test::More approach with comprehensive edge case coverage:
+```perl
+use Test::More;
+plan tests => 50;
+
+# Test arithmetic operations, comparisons, edge cases
+ok($decimal1 + $decimal2 == $expected, "Decimal addition works");
+is($string->Substring(0, 5), "Hello", "Substring extraction");
+```
+
+### ✅ **Compilation Verification**
 ```bash
-perl -MO=Deparse System.pm
-perl -MO=Deparse CSharp.pm
+# Verify core modules compile correctly
+perl -I. -c System.pm
+perl -I. -c CSharp.pm  
+perl -I. -c Filter/CSharp.pm
+
+# Test syntax transformation
+perl -MO=Deparse -MFilter::CSharp -e 'var $x = 42;'
 ```
+
+### 📈 **CI/CD Integration**
+GitHub Actions automatically runs:
+- **Syntax checks** across all .pm files
+- **Individual test files** with proper -I. flags
+- **System framework tests** for core functionality
+- **Filter::CSharp tests** for syntax transformation
+- **Multi-version testing** on Perl 5.30-5.36
+
+### 🔧 **Test Development Notes**
+- All tests use `-I.` flag to include current directory in @INC
+- Filter tests create temporary files to test actual transformation behavior
+- System tests focus on API compatibility with .NET BCL
+- Line number preservation is critical for debugging transformed C# code
+- Tests document both working features and known limitations
 
 ## 🏗️ Architecture Notes
 
