@@ -65,6 +65,17 @@ Perl-NetFramework/
 ├── CSharp.pm                    # Core language constructs and utilities
 ├── Filter/                      # Alternative implementations
 │   └── CSharp.pm               
+├── tests/                       # Comprehensive test suite
+│   ├── README.md               # Test documentation and usage
+│   ├── run_tests.pl            # Test runner with colored output
+│   └── System/                 # Test files organized by namespace
+│       ├── Object.pl           # System::Object tests
+│       ├── String.pl           # System::String tests
+│       ├── Array.pl            # System::Array tests
+│       ├── Collections/        # Collection tests
+│       ├── Linq/               # LINQ operation tests
+│       ├── IO/                 # File I/O tests
+│       └── Diagnostics/        # Diagnostics tests
 └── System/                      # .NET BCL namespace hierarchy
     ├── Object.pm                # Base object class
     ├── String.pm                # String manipulation
@@ -177,18 +188,35 @@ export PERL5LIB=$PERL5LIB:/path/to/Perl-NetFramework
 
 ## 🔧 Development and Testing
 
+### 🧪 Running the Test Suite
+The project includes a comprehensive test suite using Test::More:
+```bash
+# Run all tests
+cd tests
+perl run_tests.pl
+
+# Run with detailed output
+perl run_tests.pl --verbose
+
+# Run specific test patterns
+perl run_tests.pl --pattern "String*"
+perl run_tests.pl --pattern "System/Collections/*"
+```
+
+### 📊 Test Coverage
+The test suite provides comprehensive coverage for:
+- **Core Types**: Object, String, Array operations
+- **Collections**: Hashtable, enumeration, LINQ integration  
+- **LINQ Operations**: Where, Select, OrderBy, First/Last, Any/All
+- **I/O Operations**: File reading, writing, manipulation
+- **Diagnostics**: Stopwatch timing functionality
+- **Exception Handling**: Proper error conditions and edge cases
+
 ### ✅ Compilation Check
 Verify syntax and compilation:
 ```bash
 perl -MO=Deparse System.pm
 perl -MO=Deparse CSharp.pm
-```
-
-### 🧪 Running Embedded Tests
-Some modules include test methods:
-```perl
-use System::String;
-System::String::Test();  # Run string tests
 ```
 
 ## 🏗️ Architecture Notes
