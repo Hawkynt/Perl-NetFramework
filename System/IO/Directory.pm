@@ -1,8 +1,8 @@
 package System::IO::Directory; {
   use strict;
   use warnings;
-
   use CSharp;
+  require System::Exceptions;
   use System::String;
   use System::Exceptions;
   use Symbol;
@@ -124,6 +124,22 @@ package System::IO::Directory; {
     my ($path) = @_;
     throw(System::ArgumentNullException->new('path')) unless(defined($path));
     mkdir($path);
+  }
+
+  # Enumerable versions (aliases for compatibility)
+  sub EnumerateFiles($;$$) {
+    my($path,$searchPattern,$searchOption)=@_;
+    return GetFiles($path,$searchPattern,$searchOption);
+  }
+
+  sub EnumerateDirectories($;$$) {
+    my($path,$searchPattern,$searchOption)=@_;
+    return GetDirectories($path,$searchPattern,$searchOption);
+  }
+
+  sub EnumerateFileSystemEntries($;$$) {
+    my($path,$searchPattern,$searchOption)=@_;
+    return GetFileSystemEntries($path,$searchPattern,$searchOption);
   }
 
   sub Delete($;$) {

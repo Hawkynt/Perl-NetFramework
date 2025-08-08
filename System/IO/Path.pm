@@ -148,6 +148,89 @@ package System::IO::Path; {
     }
   }
 
+  sub GetTempPath() {
+    my $path=$ENV{"TEMP"};
+    $path=$ENV{"TMP"} unless(_IsValidAndExists($path));
+    $path="/tmp" unless(_IsValidAndExists($path));
+    $path="C:\\TEMP" unless(_IsValidAndExists($path));
+    $path="C:\\WINDOWS\\TEMP" unless(_IsValidAndExists($path));
+    throw(System::NotSupportedException->new("Could not find temporary directory")) unless(_IsValidAndExists($path));
+    return System::String->new($path);
+  }
+
+  sub GetFullPath($) {
+    my($path)=@_;
+    $path=_CheckStringArg($path,"path");
+    throw(System::ArgumentNullException->new('path')) unless(defined($path));
+    throw(System::ArgumentException->new('path cannot be empty')) if($path eq '');
+    
+    # Use Perl's File::Spec to get absolute path
+    require File::Spec;
+    my $fullPath = File::Spec->rel2abs($path);
+    return System::String->new($fullPath);
+  }
+
+  sub IsPathRooted($) {
+    my($path)=@_;
+    $path=_CheckStringArg($path,"path");
+    return false unless(defined($path) && $path ne '');
+    
+    if (PLATFORM_UNIX) {
+      return(substr($path,0,1) eq '/');
+    } else {
+      # Windows: check for drive letter or UNC path
+      return(length($path) >= 1 && _IsDirectorySeparator(substr($path,0,1))) ||
+            (length($path) >= 2 && substr($path,1,1) eq VolumeSeparatorChar);
+    }
+  }
+
+  sub GetPathRoot($) {
+    my($path)=@_;
+    $path=_CheckStringArg($path,"path");
+    return System::String->new('') unless(defined($path));
+    
+    my $rootLength = _GetRootLength($path);
+    return System::String->new(substr($path, 0, $rootLength));
+  }
+
+  sub HasExtension($) {
+    my($path)=@_;
+    $path=_CheckStringArg($path,"path");
+    return false unless(defined($path));
+    
+    my $length = length($path);
+    for (my $i = $length; --$i >= 0;) {
+      my $ch = substr($path,$i,1);
+      return true if ($ch eq '.');
+      last if (_IsDirectorySeparator($ch) || $ch eq VolumeSeparatorChar);
+    }
+    return false;
+  }
+
+  sub GetInvalidFileNameChars() {
+    if (PLATFORM_UNIX) {
+      return System::Array->new('/', '\0');
+    } else {
+      return System::Array->new('<', '>', ':', '"', '|', '?', '*', '\0',
+                                 chr(1), chr(2), chr(3), chr(4), chr(5), chr(6), chr(7), chr(8), chr(9),
+                                 chr(10), chr(11), chr(12), chr(13), chr(14), chr(15), chr(16), chr(17),
+                                 chr(18), chr(19), chr(20), chr(21), chr(22), chr(23), chr(24), chr(25),
+                                 chr(26), chr(27), chr(28), chr(29), chr(30), chr(31));
+    }
+  }
+
+  sub GetInvalidPathChars() {
+    if (PLATFORM_UNIX) {
+      return System::Array->new('\0');
+    } else {
+      return System::Array->new('|', '\0',
+                                 chr(1), chr(2), chr(3), chr(4), chr(5), chr(6), chr(7), chr(8), chr(9),
+                                 chr(10), chr(11), chr(12), chr(13), chr(14), chr(15), chr(16), chr(17),
+                                 chr(18), chr(19), chr(20), chr(21), chr(22), chr(23), chr(24), chr(25),
+                                 chr(26), chr(27), chr(28), chr(29), chr(30), chr(31));
+    }
+  }
+
   sub _IsDirectorySeparator($) {
     my($char)=@_;
     return($char eq DirectorySeparatorChar||$char eq AltDirectorySeparatorChar);

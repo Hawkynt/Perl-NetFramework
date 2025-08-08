@@ -294,11 +294,11 @@ package System::TimeSpan; {
   sub TicksPerMinute(){return(TicksPerSecond()*60);}
   sub TicksPerHour(){return(TicksPerMinute()*60);}
   sub TicksPerDay(){return(TicksPerHour()*24);}
-  sub FromDays($){return(__PACKAGE__->new($_[0],0,0,0));}
-  sub FromHours($){return(__PACKAGE__->new($_[0],0,0));}
-  sub FromMinutes($){return(__PACKAGE__->new(0,$_[0],0));}
-  sub FromSeconds($){return(__PACKAGE__->new(0,0,$_[0]));}
-  sub FromMilliseconds($){return(__PACKAGE__->new(0,0,0,0,$_[0]));}
+  sub FromDays($){my($class,$days)=@_; return(__PACKAGE__->new($days*TicksPerDay()));}
+  sub FromHours($){my($class,$hours)=@_; return(__PACKAGE__->new($hours*TicksPerHour()));}
+  sub FromMinutes($){my($class,$minutes)=@_; return(__PACKAGE__->new($minutes*TicksPerMinute()));}
+  sub FromSeconds($){my($class,$seconds)=@_; return(__PACKAGE__->new($seconds*TicksPerSecond()));}
+  sub FromMilliseconds($){my($class,$milliseconds)=@_; return(__PACKAGE__->new($milliseconds*TicksPerMillisecond()));}
   #endregion
   
   BEGIN{CSharp::_ShortenPackageName(__PACKAGE__);}

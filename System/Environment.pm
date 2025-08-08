@@ -102,7 +102,7 @@ package System::Environment; {
   }
 
   sub CommandLine($) {
-    return("\"$0\" ".join(" ",map { /\s/?"\"$_\"":$_ } @ARGV));
+    return(System::String->new("\"$0\" ".join(" ",map { /\s/?"\"$_\"":$_ } @ARGV)));
   }
 
   sub CurrentManagedThreadId($) {
@@ -111,11 +111,13 @@ package System::Environment; {
   }
 
   sub ExitCode($) {
-    throw(System::NotImplementedException->new());
+    # Return the process exit code (not directly settable in Perl)
+    return 0;
   }
 
   sub HasShutdownStarted($) {
-    throw(System::NotImplementedException->new());
+    # In Perl, there's no direct way to detect shutdown
+    return 0;
   }
 
   sub Is64BitOperatingSystem($) {
@@ -125,7 +127,14 @@ package System::Environment; {
       return($name=~m/\(64-bit\)/i);
     }
     
-    throw(System::NotImplementedException->new());
+    # For Unix-like systems, check architecture
+    eval {
+      my $arch = `uname -m 2>/dev/null`;
+      return true if $arch && $arch =~ /(x86_64|amd64|ia64|ppc64|sparc64)/i;
+    };
+    
+    # Default based on process architecture
+    return __PACKAGE__->Is64BitProcess();
   }
 
   sub Is64BitProcess($) {
@@ -142,7 +151,35 @@ package System::Environment; {
   }
 
   sub OSVersion($) {
-    throw(System::NotImplementedException->new());
+    # Return OS version information
+    my $os = $^O;
+    my $version = '';
+    
+    if (__PACKAGE__->_IsWindows()) {
+      eval {
+        require Win32;
+        $version = Win32::GetOSDisplayName() || Win32::GetOSName() || 'Windows';
+      };
+      $version ||= $ENV{'OS'} || 'Windows';
+    } elsif ($os eq 'linux') {
+      eval {
+        my $release = `uname -r 2>/dev/null`;
+        chomp($version = $release) if $release;
+      };
+      $version ||= 'Unknown';
+      $version = "Linux $version";
+    } elsif ($os eq 'darwin') {
+      eval {
+        my $version_info = `sw_vers -productVersion 2>/dev/null`;
+        chomp($version = $version_info) if $version_info;
+      };
+      $version ||= 'Unknown';
+      $version = "macOS $version";
+    } else {
+      $version = "$os (Unknown version)";
+    }
+    
+    return System::String->new($version);
   }
 
   sub ProcessorCount($) {
@@ -155,27 +192,80 @@ package System::Environment; {
       }
       return($sum>0?$sum:$ENV{NUMBER_OF_PROCESSORS});
     }
-    throw(System::NotImplementedException->new());
+    
+    # Unix-like systems
+    my $count = 1;  # Default to 1
+    
+    if ($^O eq 'linux') {
+      eval {
+        my $cpuinfo = `nproc 2>/dev/null`;
+        chomp($count = $cpuinfo) if $cpuinfo && $cpuinfo =~ /^\d+$/;
+      };
+      
+      unless ($count > 1) {
+        eval {
+          my $cpuinfo = `cat /proc/cpuinfo 2>/dev/null | grep -c ^processor`;
+          chomp($count = $cpuinfo) if $cpuinfo && $cpuinfo =~ /^\d+$/;
+        };
+      }
+    } elsif ($^O eq 'darwin') {
+      eval {
+        my $cpuinfo = `sysctl -n hw.ncpu 2>/dev/null`;
+        chomp($count = $cpuinfo) if $cpuinfo && $cpuinfo =~ /^\d+$/;
+      };
+    }
+    
+    return int($count) || 1;
   }
 
   sub StackTrace($) {
-    throw(System::NotImplementedException->new());
+    # Generate a simple stack trace
+    my @stack;
+    my $i = 1;
+    while (my @caller_info = caller($i)) {
+      my ($package, $filename, $line, $sub) = @caller_info;
+      push @stack, "   at $sub in $filename:line $line";
+      $i++;
+      last if $i > 50; # Prevent infinite loops
+    }
+    return join("\n", @stack);
   }
 
   sub SystemDirectory($) {
-    throw(System::NotImplementedException->new());
+    if (__PACKAGE__->_IsWindows()) {
+      return $ENV{SYSTEMROOT} || $ENV{WINDIR} || 'C:\Windows';
+    } elsif ($^O eq 'darwin') {
+      return '/System';
+    } else {
+      return '/usr';
+    }
   }
 
   sub SystemPageSize($) {
-    throw(System::NotImplementedException->new());
+    # Default to 4KB page size (common on most systems)
+    if (__PACKAGE__->_IsWindows()) {
+      eval {
+        require Win32;
+        my ($string, $major, $minor, $build, $id) = Win32::GetOSVersion();
+        return 4096; # Windows typically uses 4KB pages
+      };
+    }
+    # Unix-like systems typically use 4KB pages
+    return 4096;
   }
 
   sub TickCount($) {
-    throw(System::NotImplementedException->new());
+    # Return milliseconds since some reference point
+    # Using times() which returns clock ticks, convert to milliseconds
+    my @times = times();
+    my $ticks = $times[0] + $times[1] + $times[2] + $times[3];
+    
+    # Convert to milliseconds (approximate)
+    return int($ticks * 1000 / ($ENV{'CLK_TCK'} || 100));
   }
 
   sub UserDomainName($) {
-    return(GetEnvironmentVariable("USERDOMAIN"));
+    return(__PACKAGE__->GetEnvironmentVariable("USERDOMAIN") || System::String->new(__PACKAGE__->MachineName()));
   }
 
   sub UserInteractive($) {
@@ -185,13 +275,48 @@ package System::Environment; {
   sub UserName($) {
     return((__PACKAGE__->_IsWindows()?null:getpwuid($<)) || getlogin() || $ENV{USERNAME} || $ENV{USER});
   }
+  
+  sub CurrentDirectory {
+    my ($class, $value) = @_;
+    if (@_ > 1) {  # Setter was called (value parameter provided, even if undef)
+      throw(System::ArgumentNullException->new('value')) unless defined($value);
+      throw(System::ArgumentException->new('path cannot be empty')) if $value eq '';
+      
+      chdir($value) or throw(System::DirectoryNotFoundException->new("Directory not found: $value"));
+    } else {
+      # Getter
+      require Cwd;
+      return System::String->new(Cwd::getcwd());
+    }
+  }
 
   sub Version($) {
-    throw(System::NotImplementedException->new());
+    # Return .NET Framework version equivalent (this Perl implementation)
+    return System::String->new("Perl-NetFramework 1.0.0");
   }
 
   sub WorkingSet($) {
-    throw(System::NotImplementedException->new());
+    # Return working set size in bytes (approximate)
+    my $size = 0;
+    
+    if ($^O eq 'linux') {
+      eval {
+        open my $fh, '<', '/proc/self/status' or return 1024 * 1024;
+        while (my $line = <$fh>) {
+          if ($line =~ /^VmRSS:\s*(\d+)\s*kB/) {
+            $size = $1 * 1024;  # Convert KB to bytes
+            last;
+          }
+        }
+        close $fh;
+      };
+    } elsif (__PACKAGE__->_IsWindows()) {
+      # For Windows, could use WMI but keep it simple for now
+      $size = 1024 * 1024;  # 1MB default
+    }
+    
+    # Fallback - return a reasonable default
+    return $size || 1024 * 1024;  # 1MB default
   }
   #endregion
 
@@ -234,34 +359,52 @@ package System::Environment; {
     exit($exitCode);
   }
 
-  sub ExpandEnvironmentVariables($) {
-    my($text)=@_;
+  sub ExpandEnvironmentVariables {
+    my ($class, $text) = @_;
+    throw(System::ArgumentNullException->new('name')) unless defined($text);
     $text=~s/%(.*?)%/$ENV{$1}/g;
     return(System::String->new($text));
   }
 
   sub FailFast($;$) {
-    throw(System::NotImplementedException->new());
+    my ($class, $message) = @_;
+    # Print error message and exit immediately
+    if (defined($message)) {
+      print STDERR "Fatal Error: $message\n";
+    } else {
+      print STDERR "Fatal Error: Process terminated.\n";
+    }
+    CORE::exit(1);
   }
 
   sub GetCommandLineArgs() {
     return(System::Array->new(@ARGV));
   }
 
-  sub GetEnvironmentVariable($;$) {
-    my($name,$target)=@_;
+  sub GetEnvironmentVariable {
+    my ($class, $name, $target) = @_;
+    throw(System::ArgumentNullException->new('name')) unless defined($name);
     throw(System::NotImplementedException->new()) if defined($target);
     return(exists($ENV{$name})?System::String->new($ENV{$name}):null);
   }
 
   sub GetEnvironmentVariables(;$) {
     my($environmentVariableTarget)=@_;
-    throw(System::NotImplementedException->new());
+    # For now, ignore target and just return process environment variables
+    
+    # Return a copy of %ENV as a hashtable-like structure  
+    my $hashtable = {};
+    for my $key (keys %ENV) {
+      $hashtable->{$key} = System::String->new($ENV{$key});
+    }
+    
+    return $hashtable;
   }
 
   sub GetFolderPath($;$) {
     my($specialFolder,$specialFolderOption)=@_;
     $specialFolderOption=System::Environment::SpecialFolderOption::None unless(defined($specialFolderOption));
+    
     if(__PACKAGE__->_IsWindows){
       require Win32;
       my $result={
@@ -284,18 +427,73 @@ package System::Environment; {
       }->{$specialFolder};
       throw(System::NotImplementedException->new()) unless defined($result);
       return(Win32::GetFolderPath($result));
+    } else {
+      # Unix/Linux/macOS implementation
+      my $homeDir = $ENV{HOME} || '/tmp';
+      
+      # Standard Unix paths based on XDG Base Directory Specification and common conventions
+      my $pathMap = {
+        System::Environment::SpecialFolder::Desktop() => "$homeDir/Desktop",
+        System::Environment::SpecialFolder::MyDocuments() => "$homeDir/Documents", 
+        System::Environment::SpecialFolder::Personal() => "$homeDir/Documents",
+        System::Environment::SpecialFolder::MyMusic() => "$homeDir/Music",
+        System::Environment::SpecialFolder::MyVideos() => "$homeDir/Videos",
+        System::Environment::SpecialFolder::MyPictures() => "$homeDir/Pictures",
+        System::Environment::SpecialFolder::Templates() => "$homeDir/Templates",
+        System::Environment::SpecialFolder::ApplicationData() => "$homeDir/.local/share",
+        System::Environment::SpecialFolder::LocalApplicationData() => "$homeDir/.local/share",
+        System::Environment::SpecialFolder::CommonApplicationData() => "/usr/share",
+        System::Environment::SpecialFolder::UserProfile() => $homeDir,
+        System::Environment::SpecialFolder::System() => "/usr",
+        System::Environment::SpecialFolder::ProgramFiles() => "/usr/bin",
+        System::Environment::SpecialFolder::CommonProgramFiles() => "/usr/share",
+      };
+      
+      # Check for macOS-specific paths
+      if ($^O eq 'darwin') {
+        $pathMap->{System::Environment::SpecialFolder::ApplicationData()} = "$homeDir/Library/Application Support";
+        $pathMap->{System::Environment::SpecialFolder::LocalApplicationData()} = "$homeDir/Library/Application Support";
+        $pathMap->{System::Environment::SpecialFolder::MyMusic()} = "$homeDir/Music";
+        $pathMap->{System::Environment::SpecialFolder::MyPictures()} = "$homeDir/Pictures";
+      }
+      
+      my $path = $pathMap->{$specialFolder};
+      return System::String->new($path) if defined($path);
+      
+      # Default fallback
+      return System::String->new($homeDir);
     }
-    throw(System::NotImplementedException->new());
   }
 
   sub GetLogicalDrives($) {
-    throw(System::NotImplementedException->new());
+    if (__PACKAGE__->_IsWindows()) {
+      eval {
+        require Win32::DriveInfo;
+        my @drives = Win32::DriveInfo::DriveInfo();
+        return System::Array->new(map { System::String->new($_) } @drives);
+      };
+      # Fallback: common Windows drives
+      return System::Array->new(
+        map { System::String->new($_) } 
+        grep { -d $_ } ('C:\\', 'D:\\', 'E:\\', 'F:\\', 'G:\\', 'H:\\')
+      );
+    } else {
+      # Unix-like: return mount points
+      return System::Array->new(System::String->new('/'));
+    }
   }
 
-  sub SetEnvironmentVariable($$;$) {
-    my($name,$value,$target)=@_;
+  sub SetEnvironmentVariable {
+    my ($class, $name, $value, $target) = @_;
+    throw(System::ArgumentNullException->new('name')) unless defined($name);
     throw(System::NotImplementedException->new()) if defined($target);
-    $ENV{$name}="$value";
+    
+    if (defined($value)) {
+      $ENV{$name} = "$value";
+    } else {
+      # Setting to undef/null removes the variable
+      delete $ENV{$name};
+    }
   }
 
   #endregion

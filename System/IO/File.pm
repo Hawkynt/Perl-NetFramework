@@ -108,7 +108,7 @@ package System::IO::File; {
     throw(System::ArgumentNullException->new('source')) unless(defined($source));
     throw(System::FileNotFoundException->new($source)) unless(-e $source && -f $source);
     throw(System::ArgumentNullException->new('target')) unless(defined($target));
-    require File::Copy;
+    use File::Copy;
     File::Copy::copy($source,$target);
   }
 
@@ -117,9 +117,59 @@ package System::IO::File; {
     throw(System::ArgumentNullException->new('source')) unless(defined($source));
     throw(System::FileNotFoundException->new($source)) unless(-e $source && -f $source);
     throw(System::ArgumentNullException->new('target')) unless(defined($target));
-    require File::Copy;
+    use File::Copy;
     File::Copy::move($source,$target);
   }
+
+  # Add methods missing in test
+  sub GetSize($) {
+    my($path)=@_;
+    throw(System::ArgumentNullException->new('path')) unless(defined($path));
+    throw(System::FileNotFoundException->new($path)) unless(-e $path && -f $path);
+    return(-s $path);
+  }
+
+  sub GetLastWriteTime($) {
+    my($path)=@_;
+    throw(System::ArgumentNullException->new('path')) unless(defined($path));
+    throw(System::FileNotFoundException->new($path)) unless(-e $path && -f $path);
+    my $mtime = (stat($path))[9];
+    require System::DateTime;
+    return System::DateTime->FromUnixTime($mtime);
+  }
+
+  sub GetCreationTime($) {
+    my($path)=@_;
+    throw(System::ArgumentNullException->new('path')) unless(defined($path));
+    throw(System::FileNotFoundException->new($path)) unless(-e $path && -f $path);
+    my $ctime = (stat($path))[10];
+    require System::DateTime;
+    return System::DateTime->FromUnixTime($ctime);
+  }
+
+  sub GetLastAccessTime($) {
+    my($path)=@_;
+    throw(System::ArgumentNullException->new('path')) unless(defined($path));
+    throw(System::FileNotFoundException->new($path)) unless(-e $path && -f $path);
+    my $atime = (stat($path))[8];
+    require System::DateTime;
+    return System::DateTime->FromUnixTime($atime);
+  }
+
+  sub GetAttributes($) {
+    my($path)=@_;
+    throw(System::ArgumentNullException->new('path')) unless(defined($path));
+    throw(System::FileNotFoundException->new($path)) unless(-e $path && -f $path);
+    
+    # Return basic file attributes as a bitmask (simplified)
+    my $attrs = 0;
+    $attrs |= 1 if(-r $path);    # ReadOnly equivalent 
+    $attrs |= 2 if(-d $path);    # Directory
+    $attrs |= 4 if(-l $path);    # ReparsePoint (symlink)
+    return $attrs;
+  }
+
+  BEGIN{CSharp::_ShortenPackageName(__PACKAGE__);}
 };
 
 1;

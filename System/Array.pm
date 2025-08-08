@@ -33,6 +33,16 @@ package System::Array; {
     return($this->[$index]);
   }
 
+  sub Get($$) {
+    my ($this,$index)=@_;
+    return $this->GetValue($index);
+  }
+
+  sub Set($$$) {
+    my ($this,$index,$value)=@_;
+    return $this->SetValue($value,$index);
+  }
+
   sub SetValue($$$) {
     my ($this,$value,$index)=@_;
     throw(System::NullReferenceException->new()) unless(defined($this));

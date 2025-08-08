@@ -14,7 +14,11 @@ package System::String; {
   use overload 
     '""'=>\&ToString,
     '+'=>\&Concat,
-    'cmp'=>\&_Compare
+    'cmp'=>\&_Compare,
+    '=='=>\&_Equals,
+    'eq'=>\&_Equals,
+    '!='=>\&_NotEquals,
+    'ne'=>\&_NotEquals
     ;
 
   use constant Empty=>"";
@@ -117,6 +121,16 @@ package System::String; {
     return($comparer->Equals($this,$what));
   }
 
+  sub _Equals($$;$) {
+    my($this,$what,$swapped)=@_;
+    return $this->Equals($what);
+  }
+
+  sub _NotEquals($$;$) {
+    my($this,$what,$swapped)=@_;
+    return !$this->Equals($what);
+  }
+
   sub EndsWith($$) {
     my($this,$what)=@_;
     throw(System::NullReferenceException->new()) unless(defined($this));
@@ -173,15 +187,61 @@ package System::String; {
   }
 
   sub PadLeft($$;$) {
-    throw(System::NotImplementedException->new());
+    my ($this, $totalWidth, $paddingChar) = @_;
+    throw(System::NullReferenceException->new()) unless defined($this);
+    
+    $paddingChar //= ' ';
+    $paddingChar = substr($paddingChar, 0, 1) if length($paddingChar) > 1;
+    
+    my $data = $this->{_data} || '';
+    my $len = length($data);
+    return $this if $totalWidth <= $len;
+    
+    my $padCount = $totalWidth - $len;
+    my $padding = $paddingChar x $padCount;
+    
+    return System::String->new($padding . $data);
   }
 
   sub PadRight($$;$) {
-    throw(System::NotImplementedException->new());
+    my ($this, $totalWidth, $paddingChar) = @_;
+    throw(System::NullReferenceException->new()) unless defined($this);
+    
+    $paddingChar //= ' ';
+    $paddingChar = substr($paddingChar, 0, 1) if length($paddingChar) > 1;
+    
+    my $data = $this->{_data} || '';
+    my $len = length($data);
+    return $this if $totalWidth <= $len;
+    
+    my $padCount = $totalWidth - $len;
+    my $padding = $paddingChar x $padCount;
+    
+    return System::String->new($data . $padding);
   }
 
   sub Remove($$;$) {
-    throw(System::NotImplementedException->new());
+    my ($this, $startIndex, $count) = @_;
+    throw(System::NullReferenceException->new()) unless defined($this);
+    
+    my $data = $this->{_data} || '';
+    my $len = length($data);
+    
+    throw(System::ArgumentOutOfRangeException->new('startIndex', $startIndex)) 
+      if $startIndex < 0 || $startIndex > $len;
+    
+    if (!defined($count)) {
+      # Remove from startIndex to end
+      return System::String->new(substr($data, 0, $startIndex));
+    } else {
+      throw(System::ArgumentOutOfRangeException->new('count', $count)) if $count < 0;
+      throw(System::ArgumentOutOfRangeException->new('count', $count)) 
+        if $startIndex + $count > $len;
+      
+      my $before = substr($data, 0, $startIndex);
+      my $after = substr($data, $startIndex + $count);
+      return System::String->new($before . $after);
+    }
   }
 
   sub Split($$;$$) {
@@ -211,7 +271,7 @@ package System::String; {
   sub Substring($$;$) {
     my($this,$start,$count)=@_;
     throw(System::NullReferenceException->new()) unless(defined($this));
-    return(System::String->new(defined($count)?substr($this->{_data},$start):substr($this->{_data},$start,$count)));
+    return(System::String->new(defined($count)?substr($this->{_data},$start,$count):substr($this->{_data},$start)));
   }
 
   sub ToLower($) {

@@ -200,6 +200,8 @@ package System::ArgumentOutOfRangeException;{
   sub new {
     my $class=shift(@_);
     my($argumentName,$argumentValue)=@_;
+    $argumentName //= 'argument';
+    $argumentValue //= 'undefined';
     my $this=System::Exception::new($class,sprintf(System::Resources::EX_ARGUMENT_OUT_OF_RANGE,$argumentName,$argumentValue));
     $this->{ArgumentName}=$argumentName;
     $this->{Value}=$argumentValue;
@@ -217,6 +219,119 @@ package System::ContractException;{
     my $class=shift(@_);
     my($m)=@_;
     my $this=System::Exception::new($class,sprintf(System::Resources::EX_CONTRACT,$m));
+    return($this);
+  }
+  
+  BEGIN{CSharp::_ShortenPackageName(__PACKAGE__);}
+};
+
+# thrown when input is not in a correct format
+package System::FormatException;{
+  use base 'System::Exception';
+
+  sub new {
+    my $class=shift(@_);
+    my($m,$innerException)=@_;
+    my $this=System::Exception::new($class,$m||"Input string was not in a correct format.",$innerException);
+    return($this);
+  }
+  
+  BEGIN{CSharp::_ShortenPackageName(__PACKAGE__);}
+};
+
+# thrown when an arithmetic operation results in overflow
+package System::OverflowException;{
+  use base 'System::Exception';
+
+  sub new {
+    my $class=shift(@_);
+    my($m,$innerException)=@_;
+    my $this=System::Exception::new($class,$m||"Arithmetic operation resulted in an overflow.",$innerException);
+    return($this);
+  }
+  
+  BEGIN{CSharp::_ShortenPackageName(__PACKAGE__);}
+};
+
+# thrown when an invalid cast is attempted
+package System::InvalidCastException;{
+  use base 'System::Exception';
+
+  sub new {
+    my $class=shift(@_);
+    my($m,$innerException)=@_;
+    my $this=System::Exception::new($class,$m||"Unable to cast object.",$innerException);
+    return($this);
+  }
+  
+  BEGIN{CSharp::_ShortenPackageName(__PACKAGE__);}
+};
+
+# thrown when an object has been disposed
+package System::ObjectDisposedException;{
+  use base 'System::Exception';
+
+  sub new {
+    my $class=shift(@_);
+    my($objectName,$m,$innerException)=@_;
+    my $this=System::Exception::new($class,$m||"Cannot access a disposed object.",$innerException);
+    $this->{ObjectName}=$objectName;
+    return($this);
+  }
+  
+  BEGIN{CSharp::_ShortenPackageName(__PACKAGE__);}
+};
+
+# thrown when application logic error occurs
+package System::ApplicationException;{
+  use base 'System::Exception';
+
+  sub new {
+    my $class=shift(@_);
+    my($m,$innerException)=@_;
+    my $this=System::Exception::new($class,$m||"Application error occurred.",$innerException);
+    return($this);
+  }
+  
+  BEGIN{CSharp::_ShortenPackageName(__PACKAGE__);}
+};
+
+# thrown when semaphore is full
+package System::SemaphoreFullException;{
+  use base 'System::Exception';
+
+  sub new {
+    my $class=shift(@_);
+    my($m,$innerException)=@_;
+    my $this=System::Exception::new($class,$m||"Adding the specified count to the semaphore would cause it to exceed its maximum count.",$innerException);
+    return($this);
+  }
+  
+  BEGIN{CSharp::_ShortenPackageName(__PACKAGE__);}
+};
+
+# thrown when wait handle cannot be opened
+package System::WaitHandleCannotBeOpenedException;{
+  use base 'System::Exception';
+
+  sub new {
+    my $class=shift(@_);
+    my($m,$innerException)=@_;
+    my $this=System::Exception::new($class,$m||"No handle of the given name exists.",$innerException);
+    return($this);
+  }
+  
+  BEGIN{CSharp::_ShortenPackageName(__PACKAGE__);}
+};
+
+# thrown when URI format is invalid
+package System::UriFormatException;{
+  use base 'System::Exception';
+
+  sub new {
+    my $class=shift(@_);
+    my($m,$innerException)=@_;
+    my $this=System::Exception::new($class,$m||"Invalid URI format.",$innerException);
     return($this);
   }
   

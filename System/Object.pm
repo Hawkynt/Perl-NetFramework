@@ -11,7 +11,12 @@ package System::Object; {
   sub ToString($){
     my($this)=@_;
     require Scalar::Util;
-    return("%s(%x)",ref($this),Scalar::Util::refaddr($this));
+    return(sprintf("%s", ref($this) || __PACKAGE__));
+  }
+
+  sub GetType($){
+    my($this)=@_;
+    return(ref($this) || __PACKAGE__);
   }
   
   sub GetHashCode($){

@@ -111,6 +111,41 @@ package System::Collections::Hashtable; {
     throw(System::ArgumentNullException->new('key')) unless(defined($key));
     delete $this->{$key};
   }
+
+  sub Count($) {
+    my($this)=@_;
+    throw(System::NullReferenceException->new()) unless(defined($this));
+    return(scalar(keys(%{$this})));
+  }
+
+  sub Item($$;$) {
+    my($this,$key,$value)=@_;
+    throw(System::NullReferenceException->new()) unless(defined($this));
+    throw(System::ArgumentNullException->new('key')) unless(defined($key));
+    
+    if(@_ >= 3) {
+      # Setter: $hashtable->Item($key, $value)
+      $this->{$key} = $value;
+      return $value;
+    } else {
+      # Getter: $hashtable->Item($key)
+      return $this->{$key};
+    }
+  }
+
+  sub Get($$) {
+    my($this,$key)=@_;
+    throw(System::NullReferenceException->new()) unless(defined($this));
+    throw(System::ArgumentNullException->new('key')) unless(defined($key));
+    return $this->{$key};
+  }
+
+  sub Set($$$) {
+    my($this,$key,$value)=@_;
+    throw(System::NullReferenceException->new()) unless(defined($this));
+    throw(System::ArgumentNullException->new('key')) unless(defined($key));
+    $this->{$key} = $value;
+  }
   
   BEGIN{CSharp::_ShortenPackageName(__PACKAGE__);}
 }
