@@ -274,6 +274,129 @@ package System::IO::Path; {
     System::throw(System::InvalidArgumentException($argName)) if(ref($value));
     return($value);
   }
+
+  # Additional commonly used Path methods
+  sub IsValidPath($) {
+    my ($path) = @_;
+    return false unless defined($path);
+    
+    # Check for invalid characters
+    my $invalidChars = GetInvalidPathChars();
+    my $enumerator = $invalidChars->GetEnumerator();
+    while ($enumerator->MoveNext()) {
+      my $char = $enumerator->Current();
+      return false if index($path, $char) >= 0;
+    }
+    
+    return true;
+  }
+
+  sub IsValidFileName($) {
+    my ($fileName) = @_;
+    return false unless defined($fileName);
+    
+    # Check for invalid characters  
+    my $invalidChars = GetInvalidFileNameChars();
+    my $enumerator = $invalidChars->GetEnumerator();
+    while ($enumerator->MoveNext()) {
+      my $char = $enumerator->Current();
+      return false if index($fileName, $char) >= 0;
+    }
+    
+    return true;
+  }
+
+  sub TrimEndingDirectorySeparator($) {
+    my ($path) = @_;
+    return undef unless defined($path);
+    $path = _CheckStringArg($path, "path");
+    
+    while (length($path) > 0 && _IsDirectorySeparator(substr($path, -1))) {
+      $path = substr($path, 0, -1);
+    }
+    
+    return System::String->new($path);
+  }
+
+  sub EndsInDirectorySeparator($) {
+    my ($path) = @_;
+    return false unless defined($path);
+    $path = _CheckStringArg($path, "path");
+    
+    return length($path) > 0 && _IsDirectorySeparator(substr($path, -1));
+  }
+
+  sub Join {
+    # Similar to Combine but with different semantics
+    return Combine(@_);
+  }
+
+  sub GetRelativePath($$) {
+    my ($relativeTo, $path) = @_;
+    throw(System::ArgumentNullException->new('relativeTo')) unless defined($relativeTo);
+    throw(System::ArgumentNullException->new('path')) unless defined($path);
+    
+    $relativeTo = _CheckStringArg($relativeTo, "relativeTo");
+    $path = _CheckStringArg($path, "path");
+    
+    # Simple relative path calculation
+    # This is a basic implementation - full .NET version is more complex
+    
+    my $relativeToFull = GetFullPath($relativeTo);
+    my $pathFull = GetFullPath($path);
+    
+    # If same path, return "."
+    return System::String->new(".") if $relativeToFull eq $pathFull;
+    
+    # Split paths into components
+    my @relativeComponents = split /[\\\/]/, $relativeToFull;
+    my @pathComponents = split /[\\\/]/, $pathFull;
+    
+    # Find common prefix length
+    my $commonLength = 0;
+    my $minLength = @relativeComponents < @pathComponents ? @relativeComponents : @pathComponents;
+    
+    for my $i (0..$minLength-1) {
+      last if $relativeComponents[$i] ne $pathComponents[$i];
+      $commonLength++;
+    }
+    
+    # Build relative path
+    my @result = ();
+    
+    # Add ".." for each remaining component in relativeTo
+    for my $i ($commonLength..@relativeComponents-1) {
+      push @result, "..";
+    }
+    
+    # Add remaining components from path
+    for my $i ($commonLength..@pathComponents-1) {
+      push @result, $pathComponents[$i];
+    }
+    
+    return System::String->new(join(DirectorySeparatorChar(), @result));
+  }
+
+  sub PathStartsWith($$) {
+    my ($path, $prefix) = @_;
+    throw(System::ArgumentNullException->new('path')) unless defined($path);
+    throw(System::ArgumentNullException->new('prefix')) unless defined($prefix);
+    
+    $path = _CheckStringArg($path, "path");
+    $prefix = _CheckStringArg($prefix, "prefix");
+    
+    # Normalize both paths
+    $path = GetFullPath($path);
+    $prefix = GetFullPath($prefix);
+    
+    # Case-insensitive comparison on Windows
+    if (!PLATFORM_UNIX()) {
+      $path = lc($path);
+      $prefix = lc($prefix);
+    }
+    
+    return index($path, $prefix) == 0;
+  }
  
   BEGIN{CSharp::_ShortenPackageName(__PACKAGE__);}
 };

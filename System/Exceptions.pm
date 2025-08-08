@@ -109,6 +109,7 @@ package System::IOException;{
   sub new {
     my $class=shift(@_);
     my($ioMessage)=@_;
+    $ioMessage //= "An I/O error occurred";
     my $this=System::Exception::new($class,sprintf(System::Resources::EX_IO,$ioMessage));
     $this->{IOMessage}=$ioMessage;
     return($this);
@@ -337,6 +338,213 @@ package System::UriFormatException;{
   
   BEGIN{CSharp::_ShortenPackageName(__PACKAGE__);}
 };
+
+# thrown when unauthorized access is attempted
+package System::UnauthorizedAccessException;{
+  use base 'System::Exception';
+
+  sub new {
+    my $class=shift(@_);
+    my($m,$innerException)=@_;
+    my $this=System::Exception::new($class,$m||"Access to the path is denied.",$innerException);
+    return($this);
+  }
+  
+  BEGIN{CSharp::_ShortenPackageName(__PACKAGE__);}
+};
+
+# thrown when security error occurs
+package System::SecurityException;{
+  use base 'System::Exception';
+
+  sub new {
+    my $class=shift(@_);
+    my($m,$innerException)=@_;
+    my $this=System::Exception::new($class,$m||"Security error.",$innerException);
+    return($this);
+  }
+  
+  BEGIN{CSharp::_ShortenPackageName(__PACKAGE__);}
+};
+
+# thrown when timeout occurs
+package System::TimeoutException;{
+  use base 'System::Exception';
+
+  sub new {
+    my $class=shift(@_);
+    my($m,$innerException)=@_;
+    my $this=System::Exception::new($class,$m||"The operation has timed out.",$innerException);
+    return($this);
+  }
+  
+  BEGIN{CSharp::_ShortenPackageName(__PACKAGE__);}
+};
+
+# thrown when data corruption is detected
+package System::Data::DataException;{
+  use base 'System::Exception';
+
+  sub new {
+    my $class=shift(@_);
+    my($m,$innerException)=@_;
+    my $this=System::Exception::new($class,$m||"A data-related error occurred.",$innerException);
+    return($this);
+  }
+  
+  BEGIN{CSharp::_ShortenPackageName(__PACKAGE__);}
+};
+
+# thrown when network error occurs
+package System::Net::NetworkException;{
+  use base 'System::Exception';
+
+  sub new {
+    my $class=shift(@_);
+    my($m,$innerException)=@_;
+    my $this=System::Exception::new($class,$m||"A network error occurred.",$innerException);
+    return($this);
+  }
+  
+  BEGIN{CSharp::_ShortenPackageName(__PACKAGE__);}
+};
+
+# thrown when HTTP request fails
+package System::Net::HttpException;{
+  use base 'System::Net::NetworkException';
+
+  sub new {
+    my $class=shift(@_);
+    my($m,$statusCode,$innerException)=@_;
+    my $this=System::Net::NetworkException::new($class,$m||"HTTP request failed.",$innerException);
+    $this->{StatusCode}=$statusCode;
+    return($this);
+  }
+  
+  BEGIN{CSharp::_ShortenPackageName(__PACKAGE__);}
+};
+
+# thrown when path is invalid
+package System::IO::PathTooLongException;{
+  use base 'System::IOException';
+
+  sub new {
+    my $class=shift(@_);
+    my($m,$innerException)=@_;
+    my $this=System::IOException::new($class,$m||"The specified path, file name, or both are too long.");
+    return($this);
+  }
+  
+  BEGIN{CSharp::_ShortenPackageName(__PACKAGE__);}
+};
+
+# thrown when end of stream is reached unexpectedly
+package System::IO::EndOfStreamException;{
+  use base 'System::IOException';
+
+  sub new {
+    my $class=shift(@_);
+    my($m,$innerException)=@_;
+    my $this=System::IOException::new($class,$m||"Unable to read beyond the end of the stream.");
+    return($this);
+  }
+  
+  BEGIN{CSharp::_ShortenPackageName(__PACKAGE__);}
+};
+
+# thrown when thread state is invalid for operation
+package System::Threading::ThreadStateException;{
+  use base 'System::Exception';
+
+  sub new {
+    my $class=shift(@_);
+    my($m,$innerException)=@_;
+    my $this=System::Exception::new($class,$m||"Thread was in an invalid state for the operation being executed.",$innerException);
+    return($this);
+  }
+  
+  BEGIN{CSharp::_ShortenPackageName(__PACKAGE__);}
+};
+
+# thrown when thread is aborted
+package System::Threading::ThreadAbortException;{
+  use base 'System::Exception';
+
+  sub new {
+    my $class=shift(@_);
+    my($m,$innerException)=@_;
+    my $this=System::Exception::new($class,$m||"Thread was being aborted.",$innerException);
+    return($this);
+  }
+  
+  BEGIN{CSharp::_ShortenPackageName(__PACKAGE__);}
+};
+
+# thrown when serialization error occurs
+package System::Runtime::Serialization::SerializationException;{
+  use base 'System::Exception';
+
+  sub new {
+    my $class=shift(@_);
+    my($m,$innerException)=@_;
+    my $this=System::Exception::new($class,$m||"Serialization error.",$innerException);
+    return($this);
+  }
+  
+  BEGIN{CSharp::_ShortenPackageName(__PACKAGE__);}
+};
+
+# thrown when reflection target is not found
+package System::Reflection::TargetException;{
+  use base 'System::Exception';
+
+  sub new {
+    my $class=shift(@_);
+    my($m,$innerException)=@_;
+    my $this=System::Exception::new($class,$m||"Invalid target for this operation.",$innerException);
+    return($this);
+  }
+  
+  BEGIN{CSharp::_ShortenPackageName(__PACKAGE__);}
+};
+
+# thrown when operation is cancelled
+package System::OperationCanceledException;{
+  use base 'System::Exception';
+
+  sub new {
+    my $class=shift(@_);
+    my($m,$innerException)=@_;
+    my $this=System::Exception::new($class,$m||"The operation was cancelled.",$innerException);
+    return($this);
+  }
+  
+  BEGIN{CSharp::_ShortenPackageName(__PACKAGE__);}
+};
+
+# thrown when aggregate operations fail
+package System::AggregateException;{
+  use base 'System::Exception';
+
+  sub new {
+    my $class=shift(@_);
+    my($innerExceptions,$message)=@_;
+    $innerExceptions //= [];
+    $message //= "One or more errors occurred.";
+    
+    my $this=System::Exception::new($class,$message,scalar(@$innerExceptions) > 0 ? $innerExceptions->[0] : undef);
+    $this->{InnerExceptions}=$innerExceptions;
+    return($this);
+  }
+  
+  sub InnerExceptions {
+    my($this)=@_;
+    return $this->{InnerExceptions} // [];
+  }
+  
+  BEGIN{CSharp::_ShortenPackageName(__PACKAGE__);}
+};
+
 #endregion
 
 1;
