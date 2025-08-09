@@ -8,8 +8,6 @@ package System::IO::DirectoryInfo; {
   require System::IO::FileInfo;
   require System::Array;
   use File::Basename qw(basename dirname);
-  use File::Path qw(make_path remove_tree);
-  use File::Spec;
   
   # DirectoryInfo - provides instance methods for directory operations
   
@@ -37,8 +35,28 @@ package System::IO::DirectoryInfo; {
   sub Root {
     my ($this) = @_;
     throw(System::NullReferenceException->new()) unless defined($this);
-    my ($volume, $directories, $file) = File::Spec->splitpath($this->{_fullPath}, 1);
-    my $rootPath = File::Spec->catpath($volume, File::Spec->rootdir(), '');
+    
+    # Simple root detection - works on both Unix and Windows
+    my $path = $this->{_fullPath};
+    my $rootPath;
+    
+    if ($path =~ /^([A-Za-z]:)/) {
+      # Windows drive letter
+      $rootPath = $1 . '/';
+    } elsif ($path =~ /^\//) {
+      # Unix root
+      $rootPath = '/';
+    } else {
+      # Relative path - use current working directory root
+      require Cwd;
+      my $cwd = Cwd::getcwd();
+      if ($cwd =~ /^([A-Za-z]:)/) {
+        $rootPath = $1 . '/';
+      } else {
+        $rootPath = '/';
+      }
+    }
+    
     return System::IO::DirectoryInfo->new($rootPath);
   }
   
@@ -48,8 +66,7 @@ package System::IO::DirectoryInfo; {
     throw(System::NullReferenceException->new()) unless defined($this);
     
     if (!$this->Exists()) {
-      make_path($this->{_fullPath}) or
-        throw(System::IOException->new("Failed to create directory: $!"));
+      $this->_CreatePath($this->{_fullPath});
       $this->Refresh();
     }
   }
@@ -60,10 +77,27 @@ package System::IO::DirectoryInfo; {
     throw(System::ArgumentNullException->new('path')) unless defined($path);
     
     my $fullPath = "$this->{_fullPath}/$path";
-    make_path($fullPath) or
-      throw(System::IOException->new("Failed to create subdirectory: $!"));
+    $this->_CreatePath($fullPath);
     
     return System::IO::DirectoryInfo->new($fullPath);
+  }
+  
+  # Internal method for creating directory paths
+  sub _CreatePath {
+    my ($this, $path) = @_;
+    return if -d $path;
+    
+    # Get parent directory
+    my $parent = dirname($path);
+    
+    # Recursively create parent if it doesn't exist
+    if ($parent ne $path && !-d $parent) {
+      $this->_CreatePath($parent);
+    }
+    
+    # Create this directory
+    mkdir($path) or
+      throw(System::IOException->new("Failed to create directory: $path - $!"));
   }
   
   sub Delete {
@@ -74,14 +108,40 @@ package System::IO::DirectoryInfo; {
     $recursive //= 0;
     
     if ($recursive) {
-      remove_tree($this->{_fullPath}) or
-        throw(System::IOException->new("Failed to delete directory recursively: $!"));
+      $this->_DeleteRecursively($this->{_fullPath});
     } else {
       rmdir($this->{_fullPath}) or
         throw(System::IOException->new("Failed to delete directory: $!"));
     }
     
     $this->Refresh();
+  }
+  
+  # Internal method for recursive deletion
+  sub _DeleteRecursively {
+    my ($this, $path) = @_;
+    return unless -d $path;
+    
+    opendir(my $dh, $path) or 
+      throw(System::IOException->new("Cannot open directory for deletion: $!"));
+    
+    my @entries = readdir($dh);
+    closedir($dh);
+    
+    for my $entry (@entries) {
+      next if $entry eq '.' || $entry eq '..';
+      my $fullPath = "$path/$entry";
+      
+      if (-d $fullPath) {
+        $this->_DeleteRecursively($fullPath);
+      } else {
+        unlink($fullPath) or
+          throw(System::IOException->new("Failed to delete file: $fullPath"));
+      }
+    }
+    
+    rmdir($path) or
+      throw(System::IOException->new("Failed to delete directory: $path"));
   }
   
   sub MoveTo {
@@ -243,9 +303,12 @@ package System::IO::DirectoryInfo; {
     my ($name, $pattern) = @_;
     
     # Convert DOS-style wildcards to regex
-    $pattern =~ s/\\./\\\\./g;  # Escape dots
-    $pattern =~ s/\\*/.\*/g;     # Convert * to .*
-    $pattern =~ s/\\?/./g;       # Convert ? to .
+    # First escape regex special characters except * and ?
+    $pattern =~ s/([\[\]{}().+^$|\\])/\\$1/g;
+    
+    # Then convert wildcards to regex
+    $pattern =~ s/\*/.\*/g;     # Convert * to .*
+    $pattern =~ s/\?/./g;       # Convert ? to .
     
     return $name =~ /^$pattern$/i;
   }

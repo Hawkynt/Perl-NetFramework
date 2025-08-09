@@ -35,7 +35,7 @@ sub test_join_operations {
             my ($person, $location) = @_;
             return "$person->{name} lives in $location->{city}";
         }
-    );
+    )->ToArray();
     
     is($joined->Length(), 3, 'Join produces correct number of results');
     is($joined->GetValue(0), "Alice lives in New York", 'Join result 1 correct');
@@ -51,7 +51,7 @@ sub test_join_operations {
             my ($person, $locations) = @_;
             return "$person->{name}: " . $locations->Count() . " locations";
         }
-    );
+    )->ToArray();
     
     is($grouped->Length(), 3, 'GroupJoin produces correct number of results');
     is($grouped->GetValue(0), "Alice: 1 locations", 'GroupJoin result 1 correct');
@@ -96,7 +96,7 @@ sub test_sequence_operations {
     my $array = System::Array->new(1, 2, 3, 4, 5);
     
     # Test Reverse
-    my $reversed = $array->Reverse();
+    my $reversed = $array->Reverse()->ToArray();
     is($reversed->Length(), 5, 'Reverse preserves length');
     is($reversed->GetValue(0), 5, 'Reverse first element correct');
     is($reversed->GetValue(4), 1, 'Reverse last element correct');
@@ -126,7 +126,7 @@ sub test_sequence_operations {
     my $zipped = $numbers->Zip($letters, sub {
         my ($num, $letter) = @_;
         return "$num$letter";
-    });
+    })->ToArray();
     
     is($zipped->Length(), 3, 'Zip length matches shorter sequence');
     is($zipped->GetValue(0), "1a", 'Zip result 1 correct');
@@ -145,18 +145,18 @@ sub test_type_operations {
     my $mixedArray = System::Array->new($str1, $num1, $str2, $num2);
     
     # Test OfType
-    my $strings = $mixedArray->OfType('System::String');
+    my $strings = $mixedArray->OfType('System::String')->ToArray();
     is($strings->Length(), 2, 'OfType filters correct number of strings');
     isa_ok($strings->GetValue(0), 'System::String', 'OfType result 1 is string');
     isa_ok($strings->GetValue(1), 'System::String', 'OfType result 2 is string');
     
     # Test Cast - should work with all strings
     my $stringArray = System::Array->new($str1, $str2);
-    my $casted = $stringArray->Cast('System::String');
+    my $casted = $stringArray->Cast('System::String')->ToArray();
     is($casted->Length(), 2, 'Cast preserves length for valid types');
     
     # Test Cast with invalid cast
-    eval { $mixedArray->Cast('System::String') };
+    eval { $mixedArray->Cast('System::String')->ToArray() };
     ok($@, 'Cast throws on invalid cast');
 }
 

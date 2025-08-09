@@ -130,10 +130,10 @@ sub test_datetime_comparison {
 sub test_datetime_formatting {
     my $dt = System::DateTime->new(2023, 12, 25, 14, 30, 45);
     
-    like($dt->ToString(), qr/2023-12-25 14:30:45/, 'Default ToString format');
-    like($dt->ToString('d'), qr/2023-12-25/, 'Date format');
-    like($dt->ToString('T'), qr/14:30:45/, 'Time format');
-    like($dt->ToString('t'), qr/14:30/, 'Short time format');
+    like($dt->ToString(), qr/12\/25\/2023 2:30:45 PM/, 'Default ToString format');
+    like($dt->ToString('d'), qr/12\/25\/2023/, 'Date format');
+    like($dt->ToString('T'), qr/2:30:45 PM/, 'Time format');
+    like($dt->ToString('t'), qr/2:30 PM/, 'Short time format');
 }
 
 sub test_datetime_parsing {

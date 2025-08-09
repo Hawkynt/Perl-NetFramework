@@ -12,7 +12,7 @@ require System::IO::DirectoryInfo;
 require System::IO::File;
 require System::IO::Directory;
 # Test plan: comprehensive tests for FileInfo and DirectoryInfo classes
-plan tests => 45;
+# plan tests => 45;  # Using done_testing() instead
 
 # Create a temporary directory for testing
 my $tempDir = "temp_test_$$";

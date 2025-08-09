@@ -37,10 +37,11 @@ sub test_linq_chaining {
         ->Where(sub { $_[0] > 10 })
         ->ToArray();
     
-    is($result->Length(), 3, 'Chained operations work');
+    is($result->Length(), 4, 'Chained operations work');
     is($result->Get(0), 12, 'First result: 4*3=12');
     is($result->Get(1), 18, 'Second result: 6*3=18');
-    is($result->Get(2), 30, 'Third result: 10*3=30');
+    is($result->Get(2), 24, 'Third result: 8*3=24');
+    is($result->Get(3), 30, 'Fourth result: 10*3=30');
 }
 
 sub test_linq_first {

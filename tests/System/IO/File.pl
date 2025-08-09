@@ -4,15 +4,32 @@ use warnings;
 use lib '../../../';
 use Test::More;
 use System;
-use File::Temp qw(tempfile tempdir);
+use File::Spec;
 
 BEGIN {
     use_ok('System::IO::File');
 }
 
+# Simple cross-platform temp file helper
+sub create_temp_file {
+    my ($suffix) = @_;
+    $suffix ||= '.tmp';
+    
+    # Use a simple time-based temp name in current directory for cross-platform compatibility
+    my $tempfile = "test_temp_" . time() . "_$$" . $suffix;
+    
+    # Return just the filename - we're already in the right directory
+    return $tempfile;
+}
+
+my @temp_files_to_cleanup = ();
+
 sub test_file_exists {
-    my $tempdir = tempdir(CLEANUP => 1);
-    my ($fh, $tempfile) = tempfile(DIR => $tempdir, CLEANUP => 1);
+    my $tempfile = create_temp_file('.tmp');
+    push @temp_files_to_cleanup, $tempfile;
+    
+    # Create the temp file
+    open my $fh, '>', $tempfile or die "Cannot create temp file: $!";
     close $fh;
     
     ok(File::Exists($tempfile), 'Exists returns true for existing file');
@@ -20,8 +37,9 @@ sub test_file_exists {
 }
 
 sub test_file_read_write {
-    my $tempdir = tempdir(CLEANUP => 1);
-    my $testfile = "$tempdir/test.txt";
+    my $testfile = create_temp_file('_test.txt');
+    push @temp_files_to_cleanup, $testfile;
+    
     my $content = "Hello, World!\nSecond line.";
     
     File::WriteAllText($testfile, $content);
@@ -37,8 +55,8 @@ sub test_file_read_write {
 }
 
 sub test_file_append {
-    my $tempdir = tempdir(CLEANUP => 1);
-    my $testfile = "$tempdir/append.txt";
+    my $testfile = create_temp_file('_append.txt');
+    push @temp_files_to_cleanup, $testfile;
     
     File::WriteAllText($testfile, "First line\n");
     File::AppendAllText($testfile, "Second line\n");
@@ -49,10 +67,10 @@ sub test_file_append {
 }
 
 sub test_file_copy_move {
-    my $tempdir = tempdir(CLEANUP => 1);
-    my $source = "$tempdir/source.txt";
-    my $copy = "$tempdir/copy.txt";
-    my $move = "$tempdir/moved.txt";
+    my $source = create_temp_file('_source.txt');
+    my $copy = create_temp_file('_copy.txt');
+    my $move = create_temp_file('_moved.txt');
+    push @temp_files_to_cleanup, ($source, $copy, $move);
     
     File::WriteAllText($source, "Test content");
     
@@ -67,8 +85,8 @@ sub test_file_copy_move {
 }
 
 sub test_file_delete {
-    my $tempdir = tempdir(CLEANUP => 1);
-    my $testfile = "$tempdir/delete.txt";
+    my $testfile = create_temp_file('_delete.txt');
+    push @temp_files_to_cleanup, $testfile;
     
     File::WriteAllText($testfile, "To be deleted");
     ok(-e $testfile, 'File exists before deletion');
@@ -78,8 +96,8 @@ sub test_file_delete {
 }
 
 sub test_file_attributes {
-    my $tempdir = tempdir(CLEANUP => 1);
-    my $testfile = "$tempdir/attributes.txt";
+    my $testfile = create_temp_file('_attributes.txt');
+    push @temp_files_to_cleanup, $testfile;
     
     File::WriteAllText($testfile, "Test");
     
@@ -101,3 +119,8 @@ test_file_delete();
 test_file_attributes();
 
 done_testing();
+
+# Cleanup temp files
+for my $file (@temp_files_to_cleanup) {
+    unlink $file if -e $file;
+}

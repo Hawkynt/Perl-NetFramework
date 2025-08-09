@@ -1,11 +1,11 @@
-package System::Linq::JoinCollection; {
+package System::Linq::GroupJoinCollection; {
   use base 'System::Collections::IEnumerable';
   
   use strict;
   use warnings;
   use CSharp;
   require System::Exceptions;
-  require System::Linq::JoinEnumerator;
+  require System::Linq::GroupJoinEnumerator;
   
   sub new {
     my ($class, $outer, $inner, $outerKeySelector, $innerKeySelector, $resultSelector) = @_;
@@ -21,7 +21,7 @@ package System::Linq::JoinCollection; {
   
   sub GetEnumerator {
     my ($this) = @_;
-    return System::Linq::JoinEnumerator->new(
+    return System::Linq::GroupJoinEnumerator->new(
       $this->{_outer}, 
       $this->{_inner}, 
       $this->{_outerKeySelector}, 
@@ -33,6 +33,6 @@ package System::Linq::JoinCollection; {
   BEGIN { CSharp::_ShortenPackageName(__PACKAGE__); }
 };
 
-# JoinEnumerator is now in separate file System::Linq::JoinEnumerator.pm
+# GroupJoinEnumerator is in separate file System::Linq::GroupJoinEnumerator.pm
 
 1;

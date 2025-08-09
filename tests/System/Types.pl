@@ -7,7 +7,7 @@ use warnings;
 use Test::More;
 
 # Plan for all the type tests
-plan tests => 50;
+plan tests => 51;
 
 use_ok('System') or BAIL_OUT("Cannot load System");
 

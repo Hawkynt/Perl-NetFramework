@@ -171,7 +171,7 @@ package System::Guid; {
     }
     
     # Set version bits (version 4 - random)
-    $bytes[6] = ($bytes[6] & 0x0F) | 0x40;
+    $bytes[7] = ($bytes[7] & 0x0F) | 0x40;
     
     # Set variant bits (RFC 4122)
     $bytes[8] = ($bytes[8] & 0x3F) | 0x80;
@@ -210,8 +210,19 @@ package System::Guid; {
     throw(System::ArgumentNullException->new('input')) unless defined($input);
     throw(System::ArgumentNullException->new('format')) unless defined($format);
     
-    # Just use Parse - the format validation is implicit
-    return $class->Parse($input);
+    # Validate format
+    throw(System::FormatException->new('Invalid format specifier')) 
+      unless $format =~ /^[DdNnBbPpXx]$/;
+    
+    # Parse the guid
+    my $guid = $class->Parse($input);
+    
+    # Validate that input matches the expected format
+    my $expected = $guid->ToString($format);
+    throw(System::FormatException->new('Input string does not match expected format'))
+      unless uc($input) eq uc($expected);
+    
+    return $guid;
   }
   
   sub TryParseExact {

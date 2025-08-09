@@ -209,9 +209,10 @@ package System::IO::Path; {
 
   sub GetInvalidFileNameChars() {
     if (PLATFORM_UNIX) {
-      return System::Array->new('/', '\0');
+      # On Unix, include commonly problematic characters for cross-platform compatibility
+      return System::Array->new('/', chr(0), '<', '>', ':', '"', '|', '?', '*');
     } else {
-      return System::Array->new('<', '>', ':', '"', '|', '?', '*', '\0',
+      return System::Array->new('<', '>', ':', '"', '|', '?', '*', chr(0),
                                  chr(1), chr(2), chr(3), chr(4), chr(5), chr(6), chr(7), chr(8), chr(9),
                                  chr(10), chr(11), chr(12), chr(13), chr(14), chr(15), chr(16), chr(17),
                                  chr(18), chr(19), chr(20), chr(21), chr(22), chr(23), chr(24), chr(25),
@@ -221,9 +222,9 @@ package System::IO::Path; {
 
   sub GetInvalidPathChars() {
     if (PLATFORM_UNIX) {
-      return System::Array->new('\0');
+      return System::Array->new(chr(0));
     } else {
-      return System::Array->new('|', '\0',
+      return System::Array->new('|', chr(0),
                                  chr(1), chr(2), chr(3), chr(4), chr(5), chr(6), chr(7), chr(8), chr(9),
                                  chr(10), chr(11), chr(12), chr(13), chr(14), chr(15), chr(16), chr(17),
                                  chr(18), chr(19), chr(20), chr(21), chr(22), chr(23), chr(24), chr(25),
@@ -278,6 +279,8 @@ package System::IO::Path; {
   # Additional commonly used Path methods
   sub IsValidPath($) {
     my ($path) = @_;
+    # Handle class name if called as method
+    $path = $_[1] if $_[0] eq __PACKAGE__ && @_ > 1;
     return false unless defined($path);
     
     # Check for invalid characters
@@ -293,6 +296,8 @@ package System::IO::Path; {
 
   sub IsValidFileName($) {
     my ($fileName) = @_;
+    # Handle class name if called as method
+    $fileName = $_[1] if $_[0] eq __PACKAGE__ && @_ > 1;
     return false unless defined($fileName);
     
     # Check for invalid characters  
@@ -308,6 +313,8 @@ package System::IO::Path; {
 
   sub TrimEndingDirectorySeparator($) {
     my ($path) = @_;
+    # Handle class name if called as method
+    $path = $_[1] if $_[0] eq __PACKAGE__ && @_ > 1;
     return undef unless defined($path);
     $path = _CheckStringArg($path, "path");
     
@@ -315,11 +322,13 @@ package System::IO::Path; {
       $path = substr($path, 0, -1);
     }
     
-    return System::String->new($path);
+    return $path;
   }
 
   sub EndsInDirectorySeparator($) {
     my ($path) = @_;
+    # Handle class name if called as method
+    $path = $_[1] if $_[0] eq __PACKAGE__ && @_ > 1;
     return false unless defined($path);
     $path = _CheckStringArg($path, "path");
     
@@ -333,31 +342,43 @@ package System::IO::Path; {
 
   sub GetRelativePath($$) {
     my ($relativeTo, $path) = @_;
+    # Handle class name if called as method
+    if ($_[0] eq __PACKAGE__ && @_ > 2) {
+      $relativeTo = $_[1];
+      $path = $_[2];
+    }
     throw(System::ArgumentNullException->new('relativeTo')) unless defined($relativeTo);
     throw(System::ArgumentNullException->new('path')) unless defined($path);
     
     $relativeTo = _CheckStringArg($relativeTo, "relativeTo");
     $path = _CheckStringArg($path, "path");
     
-    # Simple relative path calculation
-    # This is a basic implementation - full .NET version is more complex
-    
-    my $relativeToFull = GetFullPath($relativeTo);
-    my $pathFull = GetFullPath($path);
-    
     # If same path, return "."
-    return System::String->new(".") if $relativeToFull eq $pathFull;
+    return System::String->new(".") if $relativeTo eq $path;
     
-    # Split paths into components
-    my @relativeComponents = split /[\\\/]/, $relativeToFull;
-    my @pathComponents = split /[\\\/]/, $pathFull;
+    # Use File::Spec for portable path operations
+    require File::Spec;
+    
+    # Get absolute paths
+    $relativeTo = File::Spec->rel2abs($relativeTo);
+    $path = File::Spec->rel2abs($path);
+    
+    # If same path after normalization, return "."
+    return System::String->new(".") if $relativeTo eq $path;
+    
+    # Split paths into components using File::Spec
+    my ($relVol, $relDir, $relFile) = File::Spec->splitpath($relativeTo, 1);
+    my ($pathVol, $pathDir, $pathFile) = File::Spec->splitpath($path, 1);
+    
+    my @relDirs = File::Spec->splitdir($relDir);
+    my @pathDirs = File::Spec->splitdir($pathDir);
     
     # Find common prefix length
     my $commonLength = 0;
-    my $minLength = @relativeComponents < @pathComponents ? @relativeComponents : @pathComponents;
+    my $minLength = @relDirs < @pathDirs ? @relDirs : @pathDirs;
     
     for my $i (0..$minLength-1) {
-      last if $relativeComponents[$i] ne $pathComponents[$i];
+      last if $relDirs[$i] ne $pathDirs[$i];
       $commonLength++;
     }
     
@@ -365,29 +386,46 @@ package System::IO::Path; {
     my @result = ();
     
     # Add ".." for each remaining component in relativeTo
-    for my $i ($commonLength..@relativeComponents-1) {
+    for my $i ($commonLength..@relDirs-1) {
+      next if !$relDirs[$i] || $relDirs[$i] eq '';
       push @result, "..";
     }
     
     # Add remaining components from path
-    for my $i ($commonLength..@pathComponents-1) {
-      push @result, $pathComponents[$i];
+    for my $i ($commonLength..@pathDirs-1) {
+      next if !$pathDirs[$i] || $pathDirs[$i] eq '';
+      push @result, $pathDirs[$i];
     }
     
-    return System::String->new(join(DirectorySeparatorChar(), @result));
+    # Add the filename if path is a file
+    push @result, $pathFile if $pathFile;
+    
+    return @result ? System::String->new(File::Spec->catdir(@result)) : System::String->new(".");
   }
 
   sub PathStartsWith($$) {
     my ($path, $prefix) = @_;
+    # Handle class name if called as method
+    if ($_[0] eq __PACKAGE__ && @_ > 2) {
+      $path = $_[1];
+      $prefix = $_[2];
+    }
     throw(System::ArgumentNullException->new('path')) unless defined($path);
     throw(System::ArgumentNullException->new('prefix')) unless defined($prefix);
     
     $path = _CheckStringArg($path, "path");
     $prefix = _CheckStringArg($prefix, "prefix");
     
+    # Use File::Spec for portable path operations
+    require File::Spec;
+    
     # Normalize both paths
-    $path = GetFullPath($path);
-    $prefix = GetFullPath($prefix);
+    $path = File::Spec->rel2abs($path);
+    $prefix = File::Spec->rel2abs($prefix);
+    
+    # Ensure prefix ends with directory separator for proper matching
+    $prefix = File::Spec->catdir($prefix, '');
+    $prefix =~ s/[\\\/]$//; # Remove trailing separator added by catdir
     
     # Case-insensitive comparison on Windows
     if (!PLATFORM_UNIX()) {
@@ -395,6 +433,7 @@ package System::IO::Path; {
       $prefix = lc($prefix);
     }
     
+    # Check if path starts with prefix
     return index($path, $prefix) == 0;
   }
  
