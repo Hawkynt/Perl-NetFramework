@@ -106,6 +106,88 @@ sub test_string_hashing {
     isnt($a->GetHashCode(), $c->GetHashCode(), "Different strings have different hashes");
 }
 
+sub test_missing_methods {
+    my $str = System::String->new("Hello World");
+    
+    # Test LastIndexOf
+    is($str->LastIndexOf("l"), 9, "LastIndexOf finds last occurrence");
+    is($str->LastIndexOf("xyz"), -1, "LastIndexOf returns -1 for not found");
+    
+    # Test ToLowerInvariant/ToUpperInvariant
+    is($str->ToLowerInvariant()->ToString(), "hello world", "ToLowerInvariant works");
+    is($str->ToUpperInvariant()->ToString(), "HELLO WORLD", "ToUpperInvariant works");
+    
+    # Test PadLeft/PadRight (if not in StringMethodsTest.pl)
+    my $short = System::String->new("Hi");
+    is($short->PadLeft(5)->ToString(), "   Hi", "PadLeft with spaces");
+    is($short->PadLeft(5, "*")->ToString(), "***Hi", "PadLeft with custom char");
+    is($short->PadRight(5)->ToString(), "Hi   ", "PadRight with spaces");
+    is($short->PadRight(5, "*")->ToString(), "Hi***", "PadRight with custom char");
+    
+    # Test Remove (if not in StringMethodsTest.pl) 
+    is($str->Remove(5)->ToString(), "Hello", "Remove from index");
+    is($str->Remove(5, 1)->ToString(), "HelloWorld", "Remove with length");
+}
+
+sub test_operator_overloads {
+    my $a = System::String->new("Hello");
+    my $b = System::String->new("Hello");
+    my $c = System::String->new("World");
+    
+    # Test == and != operators
+    ok($a == $b, "== operator works for equal strings");
+    ok(!($a == $c), "== operator works for unequal strings");
+    ok(!($a != $b), "!= operator works for equal strings");  
+    ok($a != $c, "!= operator works for unequal strings");
+    
+    # Test eq and ne operators
+    ok($a eq $b, "eq operator works for equal strings");
+    ok(!($a eq $c), "eq operator works for unequal strings");
+    ok(!($a ne $b), "ne operator works for equal strings");
+    ok($a ne $c, "ne operator works for unequal strings");
+    
+    # Test cmp operator
+    is($a cmp $b, 0, "cmp operator returns 0 for equal strings");
+    is($a cmp $c, -1, "cmp operator returns -1 for less than");
+    is($c cmp $a, 1, "cmp operator returns 1 for greater than");
+}
+
+sub test_error_conditions {
+    # Test null reference exceptions
+    eval { my $null; $null->ToString(); };
+    ok($@, "ToString throws on null reference");
+    
+    eval { my $null; $null->Length(); };
+    ok($@, "Length throws on null reference");
+    
+    eval { my $null; $null->Contains("test"); };
+    ok($@, "Contains throws on null reference");
+    
+    # Test argument exceptions
+    my $str = System::String->new("test");
+    eval { $str->Contains({}); }; # Invalid object that can't ToString
+    ok($@, "Contains throws on invalid argument");
+}
+
+sub test_edge_cases {
+    # Empty string tests
+    my $empty = System::String->new("");
+    is($empty->Length(), 0, "Empty string has zero length");
+    ok($empty->StartsWith(""), "Empty string starts with empty");
+    ok($empty->EndsWith(""), "Empty string ends with empty");
+    is($empty->IndexOf("x"), -1, "IndexOf on empty string returns -1");
+    
+    # Single character tests
+    my $single = System::String->new("A");
+    is($single->Length(), 1, "Single char string length");
+    ok($single->StartsWith("A"), "Single char starts with itself");
+    ok($single->EndsWith("A"), "Single char ends with itself");
+    
+    # Unicode/special character handling
+    my $unicode = System::String->new("Hello\x{00A0}World"); # Non-breaking space
+    ok($unicode->Contains("\x{00A0}"), "Contains works with unicode");
+}
+
 test_string_creation();
 test_string_formatting();
 test_string_comparison();
@@ -115,5 +197,9 @@ test_string_split_join();
 test_static_methods();
 test_string_concatenation();
 test_string_hashing();
+test_missing_methods();
+test_operator_overloads();
+test_error_conditions();
+test_edge_cases();
 
 done_testing();
