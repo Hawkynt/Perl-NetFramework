@@ -6,6 +6,7 @@ package System::TimeSpan; {
   
   use CSharp;
   use System::Exceptions;
+  use System::Decimal;
   
   use constant _Long_MaxValue=>9223372036854775807;
   use constant _Long_MinValue=>-9223372036854775808;
@@ -70,22 +71,22 @@ package System::TimeSpan; {
   
   sub Days($){
     my($this)=@_;
-    return(int($this->TotalDays));
+    return(int(abs($this->TotalDays)));
   }
   
   sub Hours($){
     my($this)=@_;
-    return(int($this->TotalHours)%24);
+    return(int(abs($this->TotalHours))%24);
   }
   
   sub Minutes($){
     my($this)=@_;
-    return(int($this->TotalMinutes)%60);
+    return(int(abs($this->TotalMinutes))%60);
   }
   
   sub Seconds($){
     my($this)=@_;
-    return(int($this->TotalSeconds)%60);
+    return(int(abs($this->TotalSeconds))%60);
   }
   
   sub _10Seconds($){
@@ -100,7 +101,7 @@ package System::TimeSpan; {
   
   sub Milliseconds($){
     my($this)=@_;
-    return(int($this->TotalMilliseconds)%1000);
+    return(int(abs($this->TotalMilliseconds))%1000);
   }
   
   sub _10Milliseconds($){
@@ -206,13 +207,18 @@ package System::TimeSpan; {
     my $result=$format;
     $result=~s/([^']+)(?:'(.*?(?:(?:\\\\)+|(?:[^\\])))')?/$this->_HandlePartOfFormat($1,$2)/eg;
     $result=~s/(?:(?:\\\\)+|[^\\]|^)\[\]//g;
-    $result=~s/((?:\\\\)+|[^\\]|^)\[(.*?(?:(?:\\\\)+|[^\\]|))\]/$1._HandleFormatBrackets($2)/eg;
+    $result=~s/\[([^\]]*)\]/_HandleFormatBrackets($1)/eg;
     return($result);
   }
   
-  sub _HandleFormatBrackets($){
+  sub _HandleFormatBrackets {
     my($bracketContent)=@_;
-    return($bracketContent=~m/[1-9]/?$bracketContent:"");
+    # Show bracketed content if it contains non-zero digits or a minus sign
+    # Hide if it's just zeros and periods (like "0.")
+    if ($bracketContent =~ /[1-9]/ || $bracketContent =~ /-/) {
+      return $bracketContent;
+    }
+    return "";
   }
   
   sub _HandlePartOfFormat($$$){
@@ -294,11 +300,11 @@ package System::TimeSpan; {
   sub TicksPerMinute(){return(TicksPerSecond()*60);}
   sub TicksPerHour(){return(TicksPerMinute()*60);}
   sub TicksPerDay(){return(TicksPerHour()*24);}
-  sub FromDays($){my($class,$days)=@_; return(__PACKAGE__->new($days*TicksPerDay()));}
-  sub FromHours($){my($class,$hours)=@_; return(__PACKAGE__->new($hours*TicksPerHour()));}
-  sub FromMinutes($){my($class,$minutes)=@_; return(__PACKAGE__->new($minutes*TicksPerMinute()));}
-  sub FromSeconds($){my($class,$seconds)=@_; return(__PACKAGE__->new($seconds*TicksPerSecond()));}
-  sub FromMilliseconds($){my($class,$milliseconds)=@_; return(__PACKAGE__->new($milliseconds*TicksPerMillisecond()));}
+  sub FromDays($$){my($class,$days)=@_; return(__PACKAGE__->new($days*TicksPerDay()));}
+  sub FromHours($$){my($class,$hours)=@_; return(__PACKAGE__->new($hours*TicksPerHour()));}
+  sub FromMinutes($$){my($class,$minutes)=@_; return(__PACKAGE__->new($minutes*TicksPerMinute()));}
+  sub FromSeconds($$){my($class,$seconds)=@_; return(__PACKAGE__->new($seconds*TicksPerSecond()));}
+  sub FromMilliseconds($$){my($class,$milliseconds)=@_; return(__PACKAGE__->new($milliseconds*TicksPerMillisecond()));}
   #endregion
   
   BEGIN{CSharp::_ShortenPackageName(__PACKAGE__);}

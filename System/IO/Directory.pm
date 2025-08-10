@@ -74,14 +74,20 @@ package System::IO::Directory; {
     
     my @paths=($path);
     while(@paths){
-      $path=pop(@paths);
-      throw(System::IOException->new("Could not open directory")) unless(opendir($handle,"$path"));
+      my $currentPath=pop(@paths);
+      throw(System::IOException->new("Could not open directory")) unless(opendir($handle,"$currentPath"));
       foreach my $item(readdir($handle)) {
         next if($item eq "." || $item eq "..");
-        next unless(_MatchesFilter($item,$searchPattern));
-        my $itemPath=System::IO::Path::Combine($path,$item);
+        my $itemPath=System::IO::Path::Combine($currentPath,$item)->ToString();
         next unless(-e $itemPath);
-        push(@paths,$itemPath)if(-d$itemPath);
+        
+        # For recursive search, add directories to search path regardless of pattern/predicate
+        if($searchOption==AllDirectories() && -d $itemPath) {
+          push(@paths,$itemPath);
+        }
+        
+        # Only include items that match the filter pattern and predicate
+        next unless(_MatchesFilter($item,$searchPattern));
         next unless(&{$predicate}($itemPath));
         push(@result,new System::String($itemPath));
       }
@@ -123,7 +129,44 @@ package System::IO::Directory; {
   sub Create($) {
     my ($path) = @_;
     throw(System::ArgumentNullException->new('path')) unless(defined($path));
-    mkdir($path);
+    
+    # Try File::Path first for recursive directory creation
+    my $success = 0;
+    
+    eval {
+      require File::Path;
+      File::Path::make_path($path);
+      $success = 1;
+    };
+    
+    # If File::Path fails, use manual recursive creation
+    if (!$success || $@) {
+      eval {
+        _CreateRecursive($path);
+        $success = 1;
+      };
+    }
+    
+    if (!$success || $@) {
+      throw(System::IOException->new("Cannot create directory: $@"));
+    }
+  }
+  
+  # Helper for manual recursive directory creation
+  sub _CreateRecursive {
+    my ($path) = @_;
+    return if -d $path;  # Already exists
+    
+    # Get parent directory using simple string manipulation to avoid Path issues
+    my $parent = $path;
+    $parent =~ s/[\\\/][^\\\/]*[\\\/]*$//;  # Remove last component
+    
+    if ($parent ne '' && $parent ne $path && !-d $parent) {
+      _CreateRecursive($parent);
+    }
+    
+    # Create this directory
+    mkdir($path) or die "Cannot create directory $path: $!";
   }
 
   # Enumerable versions (aliases for compatibility)

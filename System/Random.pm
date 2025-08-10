@@ -15,7 +15,7 @@ package System::Random; {
     
     my $this = bless {
       _seed => undef,
-      _rng_state => undef,
+      _x => 0, _y => 0, _z => 0, _w => 0, # xorshift128+ state
     }, ref($class) || $class || __PACKAGE__;
     
     if (defined($seed)) {
@@ -25,24 +25,54 @@ package System::Random; {
       my $seedValue = ref($seed) ? $seed->Value() : $seed;
       $this->{_seed} = $seedValue;
     } else {
-      # Use current time as seed
-      $this->{_seed} = time() ^ $$;  # XOR with process ID for more randomness
+      # Use current time and process info as seed
+      $this->{_seed} = time() ^ ($$ << 16) ^ int(rand(2**31));
     }
     
-    # Initialize our own Linear Congruential Generator state
-    $this->{_rng_state} = $this->{_seed} % 2147483647;
-    $this->{_rng_state} = 1 if $this->{_rng_state} <= 0; # Ensure positive
+    # Initialize xorshift128+ state 
+    $this->_InitializeState($this->{_seed});
     
     return $this;
   }
   
-  # Internal method to generate next random number using LCG
+  # Initialize xorshift128+ state - simple, high quality, portable
+  sub _InitializeState {
+    my ($this, $seed) = @_;
+    
+    # Use a simple LCG to generate initial state from seed
+    my $s = $seed || 1;
+    $s = 1 if $s == 0; # Avoid zero state
+    
+    # Generate 4 initial state values
+    $s = ($s * 1103515245 + 12345) & 0x7FFFFFFF; $this->{_x} = $s;
+    $s = ($s * 1103515245 + 12345) & 0x7FFFFFFF; $this->{_y} = $s;  
+    $s = ($s * 1103515245 + 12345) & 0x7FFFFFFF; $this->{_z} = $s;
+    $s = ($s * 1103515245 + 12345) & 0x7FFFFFFF; $this->{_w} = $s;
+    
+    # Ensure no zero state
+    $this->{_w} = 1 if $this->{_w} == 0;
+  }
+  
+  # xorshift128+ algorithm - fast, good quality, simple
+  sub _NextRandom64 {
+    my ($this) = @_;
+    
+    # xorshift128+ algorithm
+    my $t = $this->{_x} ^ ($this->{_x} << 11);
+    $this->{_x} = $this->{_y};
+    $this->{_y} = $this->{_z};
+    $this->{_z} = $this->{_w};
+    $this->{_w} = ($this->{_w} ^ ($this->{_w} >> 19)) ^ ($t ^ ($t >> 8));
+    
+    # Use 32-bit values to create 64-bit-like result
+    return ($this->{_z} << 32) + $this->{_w};
+  }
+  
+  # Internal method to generate next random number (32-bit for .NET compatibility)
   sub _NextRandom {
     my ($this) = @_;
-    # Linear Congruential Generator: (a * x + c) mod m
-    # Using same constants as .NET Framework
-    $this->{_rng_state} = (1103515245 * $this->{_rng_state} + 12345) % 2147483647;
-    return $this->{_rng_state};
+    # Use upper 32 bits of Xoshiro256++ output for best quality
+    return ($this->_NextRandom64() >> 32) & 0x7FFFFFFF; # Keep positive for .NET compatibility
   }
 
   # Generate random integer
@@ -77,7 +107,10 @@ package System::Random; {
     my ($this) = @_;
     throw(System::NullReferenceException->new()) unless defined($this);
     
-    return ($this->_NextRandom() / 2147483647.0);
+    # Use full 64-bit precision for better quality doubles
+    # Use 53 bits of precision (IEEE 754 double mantissa size)
+    my $random64 = $this->_NextRandom64();
+    return ($random64 >> 11) / 9007199254740992.0; # 2^53
   }
   
   # Fill byte array with random bytes
@@ -87,15 +120,29 @@ package System::Random; {
     throw(System::ArgumentNullException->new('buffer')) unless defined($buffer);
     
     if (ref($buffer) eq 'ARRAY') {
-      # Fill array with random bytes
-      for my $i (0..$#$buffer) {
-        $buffer->[$i] = int(($this->_NextRandom() / 2147483647.0) * 256);
+      # Fill array with random bytes efficiently using 64-bit output
+      my $i = 0;
+      while ($i <= $#$buffer) {
+        my $random64 = $this->_NextRandom64();
+        # Extract 8 bytes from the 64-bit value
+        for my $byte_idx (0..7) {
+          last if $i > $#$buffer;
+          $buffer->[$i] = ($random64 >> ($byte_idx * 8)) & 0xFF;
+          $i++;
+        }
       }
     } elsif (ref($buffer) && $buffer->isa('System::Array')) {
       # Handle System::Array
       my $length = $buffer->Length();
-      for my $i (0..$length-1) {
-        $buffer->SetValue(int(($this->_NextRandom() / 2147483647.0) * 256), $i);
+      my $i = 0;
+      while ($i < $length) {
+        my $random64 = $this->_NextRandom64();
+        # Extract 8 bytes from the 64-bit value
+        for my $byte_idx (0..7) {
+          last if $i >= $length;
+          $buffer->SetValue(($random64 >> ($byte_idx * 8)) & 0xFF, $i);
+          $i++;
+        }
       }
     } else {
       throw(System::ArgumentException->new('buffer must be an array'));

@@ -49,20 +49,47 @@ package System::IO::Path; {
     
     throw(System::ArgumentNullException->new('path')) unless(defined($path));
     my $index=rindex($path,'.');
-    $extension='.'.$extension if(substr($extension,0,1)ne'.');
+    $extension='.'.$extension if(defined($extension) && $extension ne '' && substr($extension,0,1)ne'.');
     return System::String->new($index<0?$path.$extension:substr($path,0,$index).$extension);
   }
 
   sub Combine {
     my($args)=@_;
+    require File::Spec;
+    
+    my @parts;
+    
     if(scalar(@_)==1) {
       # test for array ref first
-      return(System::String->new(join(DirectorySeparatorChar(),grep {/\S/} map { my $a=$_;$a=~s/[\\\/]$//;my $b=DirectorySeparatorChar();$a=~s/[\\\/]/$b/g;$a } @{$args}))) if((ref($args) eq 'ARRAY') || ($args->isa("System::Collections::IEnumerable")));
-      return(System::String->new("$args"));
+      if((ref($args) eq 'ARRAY') || (ref($args) && $args->isa("System::Collections::IEnumerable"))) {
+        @parts = @{$args};
+      } else {
+        return(System::String->new("$args"));
+      }
     } else {
       # assume an array of parts in @_
-      return(System::String->new(join(DirectorySeparatorChar(),grep {/\S/} map { my $a=$_;$a=~s/[\\\/]$//;my $b=DirectorySeparatorChar();$a=~s/[\\\/]/$b/g;$a } @_)));
+      @parts = @_;
     }
+    
+    # Filter out empty or undefined parts
+    @parts = grep { defined($_) && $_ ne '' && $_ =~ /\S/ } @parts;
+    
+    return System::String->new('') unless @parts;
+    return System::String->new($parts[0]) if @parts == 1;
+    
+    # Use File::Spec for portable path combination
+    my $combined;
+    if (File::Spec->can('catfile')) {
+        $combined = File::Spec->catfile(@parts);
+    } else {
+        # Fallback to manual combination
+        $combined = join(DirectorySeparatorChar(), @parts);
+        # Normalize path separators
+        my $sep = DirectorySeparatorChar();
+        $combined =~ s/[\\\/]+/$sep/g;  # Replace multiple separators
+    }
+    
+    return System::String->new($combined);
   }
 
   sub GetDirectoryName($) {
@@ -91,7 +118,7 @@ package System::IO::Path; {
       return System::String->new(($i != $length - 1)?substr($path,$i,$length-$i):'') if ($ch eq '.');
       last if (_IsDirectorySeparator($ch) || $ch eq VolumeSeparatorChar);
     }
-    return('');
+    return(System::String->new(''));
   }
 
   sub GetFileName($) {
@@ -164,9 +191,26 @@ package System::IO::Path; {
     throw(System::ArgumentNullException->new('path')) unless(defined($path));
     throw(System::ArgumentException->new('path cannot be empty')) if($path eq '');
     
-    # Use Perl's File::Spec to get absolute path
+    # Use Cwd to get absolute path
+    require Cwd;
     require File::Spec;
-    my $fullPath = File::Spec->rel2abs($path);
+    
+    my $fullPath;
+    
+    # Try abs_path first (resolves symlinks)
+    eval { $fullPath = Cwd::abs_path($path); };
+    
+    # If that fails, try fast_abs_path (doesn't resolve symlinks)
+    if (!defined($fullPath) || $@) {
+      eval { $fullPath = Cwd::fast_abs_path($path); };
+    }
+    
+    # If both fail, use File::Spec as fallback
+    if (!defined($fullPath) || $@) {
+      $fullPath = File::Spec->rel2abs($path);
+    }
+    
+    throw(System::ArgumentException->new("Invalid path: $path")) unless defined($fullPath);
     return System::String->new($fullPath);
   }
 
@@ -263,9 +307,33 @@ package System::IO::Path; {
 
   sub _NormalizePath($$) {
     my($path,$fullCheck)=@_;
-      
-    # TODO: strip out . and .. etc. to normalize this path
-    return($path);
+    
+    return($path) unless defined($path);
+    
+    # Use File::Spec for portable path normalization
+    require File::Spec;
+    
+    # Canonicalize path (resolves ., .., multiple separators)
+    my $normalized;
+    if (File::Spec->can('canonpath')) {
+        $normalized = File::Spec->canonpath($path);
+    } else {
+        # Manual normalization
+        $normalized = $path;
+        # Replace multiple separators
+        $normalized =~ s/[\\\/]+/DirectorySeparatorChar()/eg;
+        # Handle . and .. (basic implementation)
+        while ($normalized =~ s/[^\\\/]+[\\\/]+\.\.[\\\/]+//g) {}
+        $normalized =~ s/[\\\/]+\.$//;
+        $normalized =~ s/^\.[\\\/]+//;
+    }
+    
+    # If fullCheck is requested, also resolve to absolute path
+    if ($fullCheck) {
+      $normalized = File::Spec->rel2abs($normalized);
+    }
+    
+    return($normalized);
   }
 
   sub _CheckStringArg($$) {
