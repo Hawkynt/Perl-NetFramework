@@ -61,9 +61,9 @@ package System::Threading::Thread; {
     my ($this, $value) = @_;
     throw(System::NullReferenceException->new()) unless defined($this);
     
-    if (defined($value)) {
-      # Setter
-      $this->{_name} = $value // '';
+    if (@_ > 1) {
+      # Setter - value was passed (even if undef)
+      $this->{_name} = defined($value) ? $value : '';
       return;
     }
     
@@ -147,10 +147,8 @@ package System::Threading::Thread; {
       return { status => 'completed', exception => undef, result => $result };
     });
     
-    # Detach if background thread
-    if ($this->{_isBackground}) {
-      $this->{_thread}->detach();
-    }
+    # Note: We don't detach background threads automatically
+    # because we need to be able to join them for proper cleanup
   }
   
   sub Join {

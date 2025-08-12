@@ -53,7 +53,8 @@ package System::Decimal; {
     },
     '=='=>\&Equals,
     '!='=>sub{
-      return(!Equals(@_));
+      my($this,$value,$swapped)=@_;
+      return(!$this->Equals($value,$swapped));
     },
     '<'=>sub{
        my($this,$value,$swapped)=@_;

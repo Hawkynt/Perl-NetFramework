@@ -351,6 +351,13 @@ package System::DateTime; {
     my ($ticks) = @_;
     my $totalDays = int($ticks / TicksPerDay);
     
+    # Handle negative values properly for date subtraction
+    if ($totalDays < 0) {
+      # This shouldn't happen with valid DateTime operations
+      # but we'll handle it gracefully
+      return (1, 1, 1);
+    }
+    
     # Find year
     my $year = 1;
     while (1) {

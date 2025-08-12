@@ -5,17 +5,20 @@ package System::Diagnostics::Contracts::Contract; {
   use CSharp;
   use System::Exceptions;
 
-  sub Requires($;$) {
+  sub Requires {
+    my $class = shift if @_ && !ref($_[0]) && $_[0] =~ /::Contract$/;
     my ($require,$message)=@_;
     throw(System::ContractException->new($message||"Require")) unless($require);
   }
 
-  sub Assert($;$) {
+  sub Assert {
+    my $class = shift if @_ && !ref($_[0]) && $_[0] =~ /::Contract$/;
     my ($require,$message)=@_;
     throw(System::ContractException->new($message||"Assert")) unless($require);
   }
 
-  sub Assume($;$) {
+  sub Assume {
+    my $class = shift if @_ && !ref($_[0]) && $_[0] =~ /::Contract$/;
     my ($require,$message)=@_;
     throw(System::ContractException->new($message||"Assume")) unless($require);
   }

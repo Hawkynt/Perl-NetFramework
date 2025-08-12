@@ -480,7 +480,7 @@ package System::Collections::IEnumerable; {
   sub ElementAtOrDefault($$;$) {
     my ($this, $index, $defaultValue) = @_;
     throw(System::NullReferenceException->new()) unless defined($this);
-    throw(System::ArgumentOutOfRangeException->new('index')) if $index < 0;
+    return $defaultValue if $index < 0;  # Return default for negative index instead of throwing
     
     my $enumerator = $this->GetEnumerator();
     my $currentIndex = 0;

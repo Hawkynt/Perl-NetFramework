@@ -35,10 +35,11 @@ package System::Linq::SkipIterator; {
     my $result;
     unless($this->{_alreadySkipped}){
       $this->{_alreadySkipped}=true();
-      for(my $i=$this->{_count};$i>=0;--$i) {
+      # Skip the specified number of elements (but not if count is negative or zero)
+      for(my $i=$this->{_count};$i>0;--$i) {
         return(false()) unless($this->{_enumerator}->MoveNext());
       }
-      $result=true();
+      $result=$this->{_enumerator}->MoveNext();
     }else{
       $result=$this->{_enumerator}->MoveNext()
     }

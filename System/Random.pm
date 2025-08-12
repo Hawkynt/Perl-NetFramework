@@ -3,6 +3,7 @@ package System::Random; {
   
   use strict;
   use warnings;
+  use Scalar::Util qw(blessed);
   use CSharp;
   require System::Exceptions;
   require System::Int32;
@@ -57,15 +58,15 @@ package System::Random; {
   sub _NextRandom64 {
     my ($this) = @_;
     
-    # xorshift128+ algorithm
-    my $t = $this->{_x} ^ ($this->{_x} << 11);
+    # xorshift128+ algorithm with proper 32-bit masking
+    my $t = ($this->{_x} ^ (($this->{_x} << 11) & 0xFFFFFFFF)) & 0xFFFFFFFF;
     $this->{_x} = $this->{_y};
     $this->{_y} = $this->{_z};
     $this->{_z} = $this->{_w};
-    $this->{_w} = ($this->{_w} ^ ($this->{_w} >> 19)) ^ ($t ^ ($t >> 8));
+    $this->{_w} = (($this->{_w} ^ ($this->{_w} >> 19)) ^ ($t ^ ($t >> 8))) & 0xFFFFFFFF;
     
-    # Use 32-bit values to create 64-bit-like result
-    return ($this->{_z} << 32) + $this->{_w};
+    # Return combined result
+    return ($this->{_z} * 4294967296) + $this->{_w};
   }
   
   # Internal method to generate next random number (32-bit for .NET compatibility)
@@ -81,24 +82,25 @@ package System::Random; {
     throw(System::NullReferenceException->new()) unless defined($this);
     
     if (!defined($minValue) && !defined($maxValue)) {
-      # Next() - return non-negative integer
-      return $this->_NextRandom() % 2147483647;
+      # Next() - return non-negative integer less than Int32.MaxValue
+      return $this->_NextRandom() & 0x7FFFFFFE;  # Ensure non-negative and < Int32.MaxValue
     } elsif (!defined($maxValue)) {
       # Next(maxValue) - return integer from 0 to maxValue-1
       my $max = ref($minValue) ? $minValue->Value() : $minValue;
       throw(System::ArgumentOutOfRangeException->new('maxValue', 'maxValue must be positive'))
         if $max <= 0;
       
-      return $this->_NextRandom() % $max;
+      return $max == 1 ? 0 : int(($this->_NextRandom() / 2147483648.0) * $max);
     } else {
       # Next(minValue, maxValue) - return integer from minValue to maxValue-1
       my $min = ref($minValue) ? $minValue->Value() : $minValue;
       my $max = ref($maxValue) ? $maxValue->Value() : $maxValue;
       
       throw(System::ArgumentOutOfRangeException->new('minValue'))
-        if $min > $max;
+        if $min >= $max;
       
-      return $min + int(($this->_NextRandom() / 2147483647.0) * ($max - $min));
+      my $range = $max - $min;
+      return $range == 1 ? $min : $min + int(($this->_NextRandom() / 2147483648.0) * $range);
     }
   }
   
@@ -119,8 +121,21 @@ package System::Random; {
     throw(System::NullReferenceException->new()) unless defined($this);
     throw(System::ArgumentNullException->new('buffer')) unless defined($buffer);
     
-    if (ref($buffer) eq 'ARRAY') {
-      # Fill array with random bytes efficiently using 64-bit output
+    if (ref($buffer) eq 'REF' && ref($$buffer) eq 'ARRAY') {
+      # Handle array reference passed as \@array
+      my $array_ref = $$buffer;
+      my $i = 0;
+      while ($i <= $#$array_ref) {
+        my $random64 = $this->_NextRandom64();
+        # Extract 8 bytes from the 64-bit value
+        for my $byte_idx (0..7) {
+          last if $i > $#$array_ref;
+          $array_ref->[$i] = ($random64 >> ($byte_idx * 8)) & 0xFF;
+          $i++;
+        }
+      }
+    } elsif (ref($buffer) eq 'ARRAY') {
+      # Handle direct array reference
       my $i = 0;
       while ($i <= $#$buffer) {
         my $random64 = $this->_NextRandom64();
@@ -131,7 +146,7 @@ package System::Random; {
           $i++;
         }
       }
-    } elsif (ref($buffer) && $buffer->isa('System::Array')) {
+    } elsif (ref($buffer) && blessed($buffer) && $buffer->isa('System::Array')) {
       # Handle System::Array
       my $length = $buffer->Length();
       my $i = 0;
@@ -191,7 +206,9 @@ package System::Random; {
     my ($this) = @_;
     throw(System::NullReferenceException->new()) unless defined($this);
     
-    return ($this->_NextRandom() / 2147483647.0);  # Returns float between 0.0 and 1.0
+    # Ensure we never return exactly 1.0
+    my $val = $this->_NextRandom() / 2147483648.0;  # Divide by 2^31 + 1 to ensure < 1.0
+    return $val >= 1.0 ? 0.9999999 : $val;
   }
   
   # Generate random boolean
@@ -212,11 +229,15 @@ package System::Random; {
     $length //= 10;
     $charset //= 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
     
+    return '' if $length == 0;
+    
     my $result = '';
     my $charsetLength = length($charset);
     
     for my $i (1..$length) {
-      $result .= substr($charset, int(($this->_NextRandom() / 2147483647.0) * $charsetLength), 1);
+      my $index = int(($this->_NextRandom() / 2147483648.0) * $charsetLength);
+      $index = $charsetLength - 1 if $index >= $charsetLength;  # Ensure valid index
+      $result .= substr($charset, $index, 1);
     }
     
     return $result;
@@ -257,12 +278,16 @@ package System::Random; {
     throw(System::ArgumentNullException->new('array')) unless defined($array);
     
     my $length;
-    if (ref($array) eq 'ARRAY') {
+    if (ref($array) eq 'REF' && ref($$array) eq 'ARRAY') {
+      my $array_ref = $$array;
+      $length = scalar(@$array_ref);
+      return $array_ref->[int(($this->_NextRandom() / 2147483648.0) * $length)] if $length > 0;
+    } elsif (ref($array) eq 'ARRAY') {
       $length = scalar(@$array);
-      return $array->[int(($this->_NextRandom() / 2147483647.0) * $length)] if $length > 0;
-    } elsif (ref($array) && $array->isa('System::Array')) {
+      return $array->[int(($this->_NextRandom() / 2147483648.0) * $length)] if $length > 0;
+    } elsif (ref($array) && blessed($array) && $array->isa('System::Array')) {
       $length = $array->Length();
-      return $array->GetValue(int(($this->_NextRandom() / 2147483647.0) * $length)) if $length > 0;
+      return $array->GetValue(int(($this->_NextRandom() / 2147483648.0) * $length)) if $length > 0;
     }
     
     throw(System::ArgumentException->new('array must be non-empty'));
@@ -274,17 +299,24 @@ package System::Random; {
     throw(System::NullReferenceException->new()) unless defined($this);
     throw(System::ArgumentNullException->new('array')) unless defined($array);
     
-    if (ref($array) eq 'ARRAY') {
+    if (ref($array) eq 'REF' && ref($$array) eq 'ARRAY') {
+      my $array_ref = $$array;
+      # Fisher-Yates shuffle
+      for my $i (reverse 1..$#$array_ref) {
+        my $j = int(($this->_NextRandom() / 2147483648.0) * ($i + 1));
+        ($array_ref->[$i], $array_ref->[$j]) = ($array_ref->[$j], $array_ref->[$i]);
+      }
+    } elsif (ref($array) eq 'ARRAY') {
       # Fisher-Yates shuffle
       for my $i (reverse 1..$#$array) {
-        my $j = int(($this->_NextRandom() / 2147483647.0) * ($i + 1));
+        my $j = int(($this->_NextRandom() / 2147483648.0) * ($i + 1));
         ($array->[$i], $array->[$j]) = ($array->[$j], $array->[$i]);
       }
-    } elsif (ref($array) && $array->isa('System::Array')) {
+    } elsif (ref($array) && blessed($array) && $array->isa('System::Array')) {
       # Handle System::Array
       my $length = $array->Length();
       for my $i (reverse 1..($length-1)) {
-        my $j = int(($this->_NextRandom() / 2147483647.0) * ($i + 1));
+        my $j = int(($this->_NextRandom() / 2147483648.0) * ($i + 1));
         my $temp = $array->GetValue($i);
         $array->SetValue($array->GetValue($j), $i);
         $array->SetValue($temp, $j);
@@ -302,8 +334,8 @@ package System::Random; {
     
     my $seedValue = ref($seed) ? $seed->Value() : $seed;
     $this->{_seed} = $seedValue;
-    $this->{_rng_state} = $seedValue % 2147483647;
-    $this->{_rng_state} = 1 if $this->{_rng_state} <= 0; # Ensure positive
+    # Reinitialize the xorshift state with the new seed
+    $this->_InitializeState($seedValue);
   }
   
   sub ToString {

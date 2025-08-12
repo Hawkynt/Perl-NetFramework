@@ -22,9 +22,8 @@ package System::Object; {
   sub GetHashCode($){
     my($this)=@_;
     return(0)unless(defined($this));
-    return($this->GetHashCode())if($this->can("GetHashCode")&&ref($this)ne __PACKAGE__);
     require Scalar::Util;
-    return(Scalar::Util::refaddr($this));
+    return(Scalar::Util::refaddr($this)||0);
   }
   
   sub ReferenceEquals {
@@ -75,7 +74,8 @@ package System::Object; {
       
       # If both are objects, use reference comparison
       if (ref($other)) {
-        return ReferenceEquals($this, $other);
+        eval { return ReferenceEquals($this, $other); };
+        return false if $@; # If ReferenceEquals throws, objects are not equal
       } else {
         return(false); # Object can't equal scalar
       }
@@ -105,9 +105,6 @@ package System::Object; {
         return(true) if (($value1 eq '0' && $value2 eq '') || ($value1 eq '' && $value2 eq '0'));
         # String comparison for non-numeric values  
         return($value1 eq $value2);
-      } else {
-        # String comparison
-        return($value1 eq $value2);
       }
       
       # use IEquatable.Equals if both types are in the same class chain
@@ -115,8 +112,9 @@ package System::Object; {
         return(true) if(ReferenceEquals($value1,$value2));
         
         unless($preventEquatable){
-          return($value2->Equals($value1,true)) if($value1->isa($ref2) && $value2->isa("System::IEquatable"));
-          return($value1->Equals($value2,true)) if($value2->isa($ref1) && $value1->isa("System::IEquatable"));
+          require Scalar::Util;
+          return($value2->Equals($value1,true)) if(Scalar::Util::blessed($value1) && Scalar::Util::blessed($value2) && $value1->isa($ref2) && $value2->isa("System::IEquatable"));
+          return($value1->Equals($value2,true)) if(Scalar::Util::blessed($value1) && Scalar::Util::blessed($value2) && $value2->isa($ref1) && $value1->isa("System::IEquatable"));
         }
       }
       

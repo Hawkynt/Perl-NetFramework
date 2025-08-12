@@ -522,28 +522,8 @@ package System::OperationCanceledException;{
   BEGIN{CSharp::_ShortenPackageName(__PACKAGE__);}
 };
 
-# thrown when aggregate operations fail
-package System::AggregateException;{
-  use base 'System::Exception';
-
-  sub new {
-    my $class=shift(@_);
-    my($innerExceptions,$message)=@_;
-    $innerExceptions //= [];
-    $message //= "One or more errors occurred.";
-    
-    my $this=System::Exception::new($class,$message,scalar(@$innerExceptions) > 0 ? $innerExceptions->[0] : undef);
-    $this->{InnerExceptions}=$innerExceptions;
-    return($this);
-  }
-  
-  sub InnerExceptions {
-    my($this)=@_;
-    return $this->{InnerExceptions} // [];
-  }
-  
-  BEGIN{CSharp::_ShortenPackageName(__PACKAGE__);}
-};
+# AggregateException is defined in System::AggregateException module
+require System::AggregateException;
 
 #endregion
 

@@ -8,6 +8,7 @@ package System::Collections::Generic::Dictionary; {
   require System::Collections::IEnumerable;
   require System::Collections::IEnumerator;
   require System::Collections::Generic::KeyValuePair;
+  require System::Collections::Generic::KeyNotFoundException;
   
   # Generic Dictionary<TKey, TValue> implementation
   sub new {
@@ -52,8 +53,8 @@ package System::Collections::Generic::Dictionary; {
     
     my $keyStr = $this->_GetKeyString($key);
     
-    if (defined($value)) {
-      # Setter
+    if (@_ > 2) {  # Check argument count instead of value definition
+      # Setter - value argument provided (even if undef)
       if (!exists($this->{_buckets}->{$keyStr})) {
         $this->{_count}++;
       }
