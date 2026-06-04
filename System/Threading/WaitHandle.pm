@@ -36,13 +36,16 @@ package System::Threading::WaitHandle; {
     
     $millisecondsTimeout //= -1;
     $exitContext //= 0;
-    
-    my $start_time = time() * 1000;
-    
-    # Simple implementation: wait for each handle in sequence
+
+    # Validate all handles upfront (.NET throws before waiting on any handle)
     for my $handle (@$waitHandles) {
       throw(System::ArgumentNullException->new('waitHandles contains null handle')) unless defined($handle);
-      
+    }
+
+    my $start_time = time() * 1000;
+
+    # Simple implementation: wait for each handle in sequence
+    for my $handle (@$waitHandles) {
       my $remaining_timeout = $millisecondsTimeout;
       if ($millisecondsTimeout >= 0) {
         my $elapsed = (time() * 1000) - $start_time;
@@ -63,15 +66,19 @@ package System::Threading::WaitHandle; {
     
     $millisecondsTimeout //= -1;
     $exitContext //= 0;
-    
+
+    # Validate all handles upfront (.NET throws before waiting on any handle)
+    for my $handle (@$waitHandles) {
+      throw(System::ArgumentNullException->new('waitHandles contains null handle')) unless defined($handle);
+    }
+
     my $start_time = time() * 1000;
-    
+
     # Simple polling implementation
     while (1) {
       for my $i (0 .. @$waitHandles - 1) {
         my $handle = $waitHandles->[$i];
-        throw(System::ArgumentNullException->new('waitHandles contains null handle')) unless defined($handle);
-        
+
         # Try non-blocking wait
         if ($handle->WaitOne(0, $exitContext)) {
           return $i;  # Return index of signaled handle

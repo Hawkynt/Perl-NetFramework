@@ -14,7 +14,7 @@ require System::Threading::Mutex;
 require System::Threading::Semaphore;
 
 # Test plan: comprehensive tests for WaitHandle
-plan tests => 35;
+plan tests => 33;
 
 # Test 1-3: Constructor and basic properties
 {
@@ -54,7 +54,9 @@ plan tests => 35;
   $result = System::Threading::WaitHandle->WaitAll(\@mixed_handles, 50);
   ok(!$result, 'WaitAll times out when not all handles are signaled');
   
-  # Test WaitAll with infinite timeout (signal the third event first)
+  # Test WaitAll with infinite timeout (re-signal event1 because the successful
+  # WaitAll above consumed the auto-reset signal, then signal the third event)
+  $event1->Set();
   $event3->Set();
   $result = System::Threading::WaitHandle->WaitAll(\@mixed_handles, -1);
   ok($result, 'WaitAll with infinite timeout succeeds when all are signaled');
@@ -115,9 +117,10 @@ plan tests => 35;
   # Test WaitAny with different synchronization types
   my @mixed_objects = ($autoEvent, $manualEvent, $mutex, $semaphore);
   
-  # Signal the semaphore (should be available)
+  # Both the unowned mutex (index 2) and the available semaphore (index 3) are
+  # signaled; the lowest signaled index wins, so WaitAny acquires the mutex
   my $index = System::Threading::WaitHandle->WaitAny(\@mixed_objects, 100);
-  is($index, 3, 'WaitAny works with mixed synchronization objects');
+  is($index, 2, 'WaitAny works with mixed synchronization objects');
   
   # Signal manual reset event and test again
   $manualEvent->Set();
@@ -205,8 +208,10 @@ plan tests => 35;
   # WaitAny should find one of the first 5 signaled handles
   my $index = System::Threading::WaitHandle->WaitAny(\@many_handles, 100);
   ok($index >= 0 && $index <= 4, 'WaitAny works with many handles');
-  
-  # Signal all handles for WaitAll test
+
+  # Signal all handles for WaitAll test (WaitAny consumed the auto-reset
+  # signal of the handle it returned, so re-signal that one too)
+  $many_handles[$index]->Set() if $index >= 0 && $index <= 4;
   for my $i (5..9) {
     $many_handles[$i]->Set();
   }
