@@ -3,7 +3,8 @@ package System::String; {
   
   use strict;
   use warnings;
-  
+
+  use Scalar::Util();
   use CSharp;
   use System::Exceptions;
 
@@ -22,12 +23,18 @@ package System::String; {
     ;
 
   use constant Empty=>"";
-    
+
+  # true when a reference cannot be turned into a string (unblessed or lacking ToString)
+  sub _IsInvalidStringArg($) {
+    my($value)=@_;
+    return(ref($value) && !(Scalar::Util::blessed($value) && $value->can('ToString')));
+  }
+
   #region instance methods
   sub new {
     my($class)=shift(@_);
     my($text)=@_;
-    throw(System::ArgumentException->new('text')) if(ref($text) && !$text->can('ToString'));
+    throw(System::ArgumentException->new('text')) if(_IsInvalidStringArg($text));
     bless {
       _data=>CSharp::_ToString($text)
     },ref($class)||$class||__PACKAGE__;
@@ -58,20 +65,19 @@ package System::String; {
   sub GetHashCode($){
     my($this)=@_;
     throw(System::NullReferenceException->new()) unless(defined($this));
-    my $hash1=5381<<16;
-    my $hash2=5381;
     my $data=$this->{_data};
+    # classic .NET Framework 32-bit string hash (djb2 variant over even/odd characters)
+    my $hash1=(5381<<16)+5381;
+    my $hash2=$hash1;
     for(my $i=0;$i<length($data);++$i){
-      my $char=substr($data,$i,1);
-      my $value=ord($char);
+      my $value=ord(substr($data,$i,1));
       if($i&1){
-        $hash2=(($hash2<<5)|($hash2>>27)^$value);
+        $hash2=((($hash2<<5)+$hash2)^$value)&0xFFFFFFFF;
       }else {
-        $hash1=(($hash1<<5)|($hash1>>27)^$value);
+        $hash1=((($hash1<<5)+$hash1)^$value)&0xFFFFFFFF;
       }
     }
-    my $result=($hash1^($hash2^1566083941));
-    return($result);
+    return(($hash1+($hash2*1566083941))&0xFFFFFFFF);
   }
   
   sub Length($) {
@@ -90,7 +96,7 @@ package System::String; {
   sub Contains($$) {
     my($this,$what)=@_;
     throw(System::NullReferenceException->new()) unless(defined($this));
-    throw(System::ArgumentException->new('what')) if(ref($what) && !$what->can('ToString'));
+    throw(System::ArgumentException->new('what')) if(_IsInvalidStringArg($what));
     my $otherText=CSharp::_ToString($what);
     return(index($this->{_data},$otherText)>=0);
   }
@@ -98,7 +104,7 @@ package System::String; {
   sub IndexOf($$) {
     my($this,$what)=@_;
     throw(System::NullReferenceException->new()) unless(defined($this));
-    throw(System::ArgumentException->new('what')) if(ref($what) && !$what->can('ToString'));
+    throw(System::ArgumentException->new('what')) if(_IsInvalidStringArg($what));
     my $otherText=CSharp::_ToString($what);
     return(index($this->{_data},$otherText));
   }
@@ -106,7 +112,7 @@ package System::String; {
   sub LastIndexOf($$) {
     my($this,$what)=@_;
     throw(System::NullReferenceException->new()) unless(defined($this));
-    throw(System::ArgumentException->new('what')) if(ref($what) && !$what->can('ToString'));
+    throw(System::ArgumentException->new('what')) if(_IsInvalidStringArg($what));
     my $otherText=CSharp::_ToString($what);
     return(rindex($this->{_data},$otherText));
   }
@@ -114,7 +120,7 @@ package System::String; {
   sub Equals($$;$) {
     my($this,$what,$comparison)=@_;
     throw(System::NullReferenceException->new()) unless(defined($this));
-    throw(System::ArgumentException->new('what')) if(ref($what) && !$what->can('ToString'));
+    throw(System::ArgumentException->new('what')) if(_IsInvalidStringArg($what));
     $comparison=StringComparison::CurrentCulture unless(defined($comparison));
     my $comparer=_GetComparerForComparison($comparison);
     throw(System::NullReferenceException->new()) unless(defined($comparer));
@@ -134,7 +140,7 @@ package System::String; {
   sub EndsWith($$) {
     my($this,$what)=@_;
     throw(System::NullReferenceException->new()) unless(defined($this));
-    throw(System::ArgumentException->new('what')) if(ref($what) && !$what->can('ToString'));
+    throw(System::ArgumentException->new('what')) if(_IsInvalidStringArg($what));
     my $otherText=CSharp::_ToString($what);
     my $data=$this->{_data};
     my $otherLen=length($otherText);
@@ -145,7 +151,7 @@ package System::String; {
   sub StartsWith($$) {
     my($this,$what)=@_;
     throw(System::NullReferenceException->new()) unless(defined($this));
-    throw(System::ArgumentException->new('what')) if(ref($what) && !$what->can('ToString'));
+    throw(System::ArgumentException->new('what')) if(_IsInvalidStringArg($what));
     my $otherText=CSharp::_ToString($what);
     my $data=$this->{_data};
     my $otherLen=length($otherText);
@@ -171,11 +177,14 @@ package System::String; {
   sub Replace($$$) {
     my($this,$what,$replacement)=@_;
     throw(System::NullReferenceException->new()) unless(defined($this));
-    throw(System::ArgumentException->new('what')) if(ref($what) && !$what->can('ToString'));
-    throw(System::ArgumentException->new('replacement')) if(ref($replacement) && !$replacement->can('ToString'));
+    throw(System::ArgumentNullException->new('what')) unless(defined($what));
+    throw(System::ArgumentException->new('what')) if(_IsInvalidStringArg($what));
+    throw(System::ArgumentException->new('replacement')) if(_IsInvalidStringArg($replacement));
     my $result=CSharp::_ToString($this);
     $what=CSharp::_ToString($what);
     $replacement=CSharp::_ToString($replacement);
+    # .NET forbids replacing the empty string (and a naive scan would never terminate)
+    throw(System::ArgumentException->new('String cannot be of zero length.','what')) if(length($what)==0);
     my $index=0;
     my $whatLen=length($what);
     my $replacementLen=length($replacement);
@@ -250,21 +259,24 @@ package System::String; {
     throw(System::ArgumentException->new()) unless(defined($splitter));
     $count=-1 unless(defined($count));
     $options=System::StringSplitOptions::None unless(defined($options));
+    require System::Array;
+    return(System::Array->new()) if($count==0);
     my @result=();
     my $length=$this->Length;
     my $pos=0;
     my $text=CSharp::_ToString($this);
     $splitter=CSharp::_ToString($splitter);
     my $splitterLength=length($splitter);
-    while($count!=0){
+    # $count limits the total number of parts (.NET), so stop splitting one part early
+    while($count!=1){
       my $index=index($text,$splitter,$pos);
       last if($index<0);
       push(@result,__PACKAGE__->new(substr($text,$pos,$index-$pos)));
       $pos=$index+$splitterLength;
       --$count if($count>0);
     }
-    push(@result,__PACKAGE__->new(substr($text,$pos,$length-$pos))) if($pos<$length);
-    require System::Array;
+    # .NET always yields the remainder, even when it is empty ("" splits into one empty part)
+    push(@result,__PACKAGE__->new(substr($text,$pos,$length-$pos)));
     return(System::Array->new(@result));
   }
 
@@ -335,30 +347,28 @@ package System::String; {
 
   sub IsNullOrEmpty($) {
     my($text)=@_;
-    throw(System::ArgumentException->new('text')) if(ref($text) && !$text->can('ToString'));
+    throw(System::ArgumentException->new('text')) if(_IsInvalidStringArg($text));
     $text=CSharp::_ToString($text);
     return !(defined($text) && ($text ne Empty));
   }
 
   sub IsNullOrWhitespace($) {
     my($text)=@_;
-    throw(System::ArgumentException->new('text')) if(ref($text) && !$text->can('ToString'));
+    throw(System::ArgumentException->new('text')) if(_IsInvalidStringArg($text));
     return(System::String->new($text)->Trim()->ToString() eq Empty);
   }
 
   sub Format(@) {
     my $text=shift;
-    throw(System::ArgumentException->new('text')) if(ref($text) && !$text->can('ToString'));
+    throw(System::ArgumentException->new('text')) if(_IsInvalidStringArg($text));
     $text=CSharp::_ToString($text);
-    
-    # add escaped brackets as first items in the list and replace all occurencies with the new index
-    unshift(@_,'{');
-    unshift(@_,'}');
-    $text=~s/\{\{/{-1}/g;
-    $text=~s/\}\}/{-2}/g;
-    
-    # replace all place holders
-    $text=~s/\{([\-0-9]+)(?:,(.*?))?(?::(.*?))?\}/CSharp::_ToString($_[$1+2],$3,$2)/eg;
+    my @args=@_;
+
+    # handle escaped braces and place holders in a single left-to-right pass like .NET,
+    # so adjacent braces ("{{{0}}}") pair up correctly
+    $text=~s/(\{\{)|(\}\})|\{([0-9]+)(?:,(.*?))?(?::(.*?))?\}/
+      defined($1)?'{':defined($2)?'}':CSharp::_ToString($args[$3],$5,$4)
+    /xeg;
     return($text);
   }
   #endregion

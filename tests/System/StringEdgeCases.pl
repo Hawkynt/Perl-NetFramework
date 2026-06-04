@@ -1,6 +1,7 @@
 #!/usr/bin/perl
 use strict;
 use warnings;
+use utf8;
 use lib '../../';
 use Test::More;
 use System;
@@ -77,8 +78,9 @@ sub test_string_length_edge_cases {
     my $long = System::String->new('x' x 100000);
     is($long->Length(), 100000, 'Very long string length');
     
-    # Test null reference
-    eval { my $null; $null->Length(); };
+    # Test null reference (call through the package so the framework's
+    # null guard is exercised instead of Perl's method-on-undef error)
+    eval { System::String::Length(undef); };
     ok($@, 'Length throws on null reference');
     like($@, qr/NullReferenceException/, 'Correct null reference exception');
 }
@@ -221,8 +223,8 @@ sub test_string_indexing_edge_cases {
     
     # Test with unicode
     my $unicode = System::String->new("Héllo Wörld");
-    is($unicode->IndexOf("ö"), 8, 'Unicode char found');
-    is($unicode->LastIndexOf("ö"), 8, 'Unicode char last index');
+    is($unicode->IndexOf("ö"), 7, 'Unicode char found');
+    is($unicode->LastIndexOf("ö"), 7, 'Unicode char last index');
     
     # Test with null bytes
     my $null_str = System::String->new("a\x00b\x00c");
@@ -380,9 +382,10 @@ sub test_string_replace_edge_cases {
     is($str->Replace("Hello", "")->ToString(), " World ", 'Replace with empty');
     is($str->Replace(" ", "")->ToString(), "HelloWorldHello", 'Remove spaces');
     
-    # Test replace empty string with something
+    # Test replace empty string with something (.NET throws ArgumentException)
     my $empty_replace = System::String->new("abc");
-    is($empty_replace->Replace("", "X")->ToString(), "XaXbXcX", 'Replace empty with char');
+    eval { $empty_replace->Replace("", "X"); };
+    ok($@, 'Replace empty string throws ArgumentException');
     
     # Test replace with same string
     is($str->Replace("Hello", "Hello")->ToString(), $str->ToString(), 'Replace with same');
@@ -701,7 +704,7 @@ sub test_string_static_methods_edge_cases {
     ok(String::IsNullOrEmpty(""), 'IsNullOrEmpty with empty string');
     ok(!String::IsNullOrEmpty(" "), 'IsNullOrEmpty with space');
     ok(!String::IsNullOrEmpty("text"), 'IsNullOrEmpty with text');
-    ok(String::IsNullOrEmpty(0), 'IsNullOrEmpty with zero');
+    ok(!String::IsNullOrEmpty(0), 'IsNullOrEmpty with zero'); # "0" is a one-char string in .NET
     
     # Test IsNullOrWhitespace
     ok(String::IsNullOrWhitespace(undef), 'IsNullOrWhitespace with undef');
@@ -725,7 +728,7 @@ sub test_string_static_methods_edge_cases {
     # Test Format edge cases
     is(String::Format("No placeholders"), "No placeholders", 'Format without placeholders');
     is(String::Format(""), "", 'Format empty string');
-    is(String::Format("{0}", ""), " ", 'Format with empty replacement');  # Note: this might format differently
+    is(String::Format("{0}", ""), "", 'Format with empty replacement'); # .NET yields the empty string
     
     # Test Format with various data types
     is(String::Format("{0}", 42), "42", 'Format with number');
