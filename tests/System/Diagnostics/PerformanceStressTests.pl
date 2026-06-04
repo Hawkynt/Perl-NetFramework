@@ -78,10 +78,17 @@ package PerformanceMonitor {
     
     sub get_memory_usage {
         my ($self) = @_;
+        # Reading /proc or shelling out costs tens of milliseconds on some platforms,
+        # which dominates the stress loops (2 calls per operation). RSS only moves in
+        # page granularity anyway, so sample at most every 100th call and reuse the
+        # cached value in between.
+        return $self->{_memory_cache}
+            if defined($self->{_memory_cache}) && ($self->{_memory_calls}++ % 100);
+
         # Simple memory estimation based on Perl's internal structures
         # This is platform-dependent and approximate
         my $memory = 0;
-        
+
         if (open(my $fh, '<', "/proc/$$/status")) {
             while (my $line = <$fh>) {
                 if ($line =~ /^VmRSS:\s*(\d+)\s*kB/) {
@@ -101,7 +108,7 @@ package PerformanceMonitor {
             }
         }
         
-        return $memory || 1; # Return 1 if we can't determine memory
+        return $self->{_memory_cache} = ($memory || 1); # Return 1 if we can't determine memory
     }
     
     sub get_statistics {
@@ -336,8 +343,8 @@ sub test_concurrent_stress {
                     $hash->Add("thread", $id);
                     $hash->Add("iteration", $i);
                     
-                    # Some computation
-                    my $math_result = System::Math->Abs(-$i);
+                    # Some computation (Math functions take plain values, not a class invocant)
+                    my $math_result = System::Math::Abs(-$i);
                     my $random = System::Random->new($i);
                     my $rand_val = $random->Next(1, 100);
                     
@@ -436,12 +443,12 @@ sub test_exception_handling_stress {
         
         eval {
             if ($test_type == 0) {
-                # NullReferenceException
-                my $null_obj;
-                $null_obj->ToString();
+                # NullReferenceException (call through the package so the framework's
+                # null guard is exercised instead of Perl's method-on-undef error)
+                System::Object::ToString(undef);
             } elsif ($test_type == 1) {
                 # ArgumentNullException
-                System::String->new(undef);
+                System::String->new("test")->Replace(undef, "x");
             } elsif ($test_type == 2) {
                 # ArgumentOutOfRangeException
                 my $str = System::String->new("test");
@@ -465,17 +472,19 @@ sub test_exception_handling_stress {
         };
         
         if ($@) {
+            # capture the exception before the next eval clears $@
+            my $exception = $@;
             $exceptions_thrown++;
-            
+
             # Verify we got the expected exception type
-            if (ref($@) && $@->isa('System::Exception')) {
+            if (ref($exception) && $exception->isa('System::Exception')) {
                 $exceptions_caught++;
-                
+
                 # Test exception methods
                 eval {
-                    my $msg = $@->Message();
-                    my $str = $@->ToString();
-                    
+                    my $msg = $exception->Message();
+                    my $str = $exception->ToString();
+
                     if (!defined($msg) || length($msg) == 0) {
                         $errors++;
                     }
