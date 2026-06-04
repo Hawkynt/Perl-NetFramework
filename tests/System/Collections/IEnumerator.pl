@@ -380,15 +380,17 @@ sub test_large_collection_enumeration_state {
     
     # Test 37: Large collection enumeration performance
     my $count = 0;
+    my $did_reset = 0;
     while ($large_enum->MoveNext()) {
         my $entry = $large_enum->Current();
         isa_ok($entry, 'System::Collections::DictionaryEntry', "Large collection item $count is DictionaryEntry") if $count < 5;
         $count++;
-        
-        # Test Reset in middle of large enumeration
-        if ($count == 500) {
+
+        # Test Reset in middle of large enumeration (only once, otherwise we loop forever)
+        if ($count == 500 && !$did_reset) {
             $large_enum->Reset();
             $count = 0; # Reset our counter too
+            $did_reset = 1;
         }
     }
     
