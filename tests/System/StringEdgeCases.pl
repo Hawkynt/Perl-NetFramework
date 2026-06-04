@@ -356,9 +356,9 @@ sub test_string_substring_edge_cases {
     is($unicode->Left(3)->ToString(), "Hél", 'Unicode Left');
     is($unicode->Right(2)->ToString(), "lö", 'Unicode Right');
     
-    # Test boundary conditions
+    # Test boundary conditions (.NET rejects negative start indices)
     eval { $str->Substring(-1); };
-    ok(!$@, 'Substring with negative start handled'); # Perl allows this
+    like($@, qr/ArgumentOutOfRangeException/, 'Substring with negative start throws');
     
     # Test null reference exceptions
     eval { my $null; $null->Substring(0); };

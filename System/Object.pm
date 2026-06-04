@@ -10,7 +10,7 @@ package System::Object; {
   
   sub ToString($){
     my($this)=@_;
-    require Scalar::Util;
+    throw(System::NullReferenceException->new()) unless(defined($this));
     return(sprintf("%s", ref($this) || __PACKAGE__));
   }
 

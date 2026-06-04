@@ -283,7 +283,11 @@ package System::String; {
   sub Substring($$;$) {
     my($this,$start,$count)=@_;
     throw(System::NullReferenceException->new()) unless(defined($this));
-    return(System::String->new(defined($count)?substr($this->{_data},$start,$count):substr($this->{_data},$start)));
+    my $length=length($this->{_data});
+    throw(System::ArgumentOutOfRangeException->new('startIndex')) if($start<0 || $start>$length);
+    return(System::String->new(substr($this->{_data},$start))) unless(defined($count));
+    throw(System::ArgumentOutOfRangeException->new('length')) if($count<0 || $start+$count>$length);
+    return(System::String->new(substr($this->{_data},$start,$count)));
   }
 
   sub ToLower($) {

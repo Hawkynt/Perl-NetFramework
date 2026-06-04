@@ -9,7 +9,8 @@ package System::Array; {
   sub new {
     my $class=shift(@_);
     my $this=[];
-    push(@{$this},@_);
+    # accept a single unblessed array reference as initializer list besides a flat list
+    push(@{$this},(@_==1 && ref($_[0]) eq 'ARRAY')?@{$_[0]}:@_);
     bless $this,ref($class)||$class||__PACKAGE__;
     return ($this);
   }
