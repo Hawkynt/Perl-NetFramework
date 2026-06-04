@@ -56,24 +56,24 @@ package System::Globalization::NumberParser; {
     
     # Handle whitespace
     if (System::Globalization::NumberStyles::HasFlag($style, 
-        System::Globalization::NumberStyles::AllowLeadingWhite)) {
+        System::Globalization::NumberStyles::AllowLeadingWhite())) {
       $cleaned =~ s/^\s+//;
     }
     if (System::Globalization::NumberStyles::HasFlag($style, 
-        System::Globalization::NumberStyles::AllowTrailingWhite)) {
+        System::Globalization::NumberStyles::AllowTrailingWhite())) {
       $cleaned =~ s/\s+$//;
     }
     
     # Handle currency symbol
     if (System::Globalization::NumberStyles::HasFlag($style, 
-        System::Globalization::NumberStyles::AllowCurrencySymbol)) {
+        System::Globalization::NumberStyles::AllowCurrencySymbol())) {
       my $currencySymbol = $culture->GetCurrencySymbol();
       $cleaned =~ s/\Q$currencySymbol\E//g;
     }
     
     # Handle parentheses for negative numbers
     if (System::Globalization::NumberStyles::HasFlag($style, 
-        System::Globalization::NumberStyles::AllowParentheses)) {
+        System::Globalization::NumberStyles::AllowParentheses())) {
       if ($cleaned =~ /^\s*\((.+)\)\s*$/) {
         $cleaned = $1;
         $isNegative = true;
@@ -82,7 +82,7 @@ package System::Globalization::NumberParser; {
     
     # Handle leading sign
     if (System::Globalization::NumberStyles::HasFlag($style, 
-        System::Globalization::NumberStyles::AllowLeadingSign)) {
+        System::Globalization::NumberStyles::AllowLeadingSign())) {
       if ($cleaned =~ s/^([+-])//) {
         $isNegative = ($1 eq '-');
       }
@@ -90,7 +90,7 @@ package System::Globalization::NumberParser; {
     
     # Handle trailing sign
     if (System::Globalization::NumberStyles::HasFlag($style, 
-        System::Globalization::NumberStyles::AllowTrailingSign)) {
+        System::Globalization::NumberStyles::AllowTrailingSign())) {
       if ($cleaned =~ s/([+-])$//) {
         $isNegative = ($1 eq '-');
       }
@@ -98,14 +98,14 @@ package System::Globalization::NumberParser; {
     
     # Handle thousands separator
     if (System::Globalization::NumberStyles::HasFlag($style, 
-        System::Globalization::NumberStyles::AllowThousands)) {
+        System::Globalization::NumberStyles::AllowThousands())) {
       my $groupSep = $culture->GetNumberGroupSeparator();
       $cleaned =~ s/\Q$groupSep\E//g;
     }
     
     # Handle decimal point
     if (System::Globalization::NumberStyles::HasFlag($style, 
-        System::Globalization::NumberStyles::AllowDecimalPoint)) {
+        System::Globalization::NumberStyles::AllowDecimalPoint())) {
       my $decimalSep = $culture->GetNumberDecimalSeparator();
       if ($cleaned =~ /\Q$decimalSep\E/) {
         $hasDecimal = true;
@@ -115,7 +115,7 @@ package System::Globalization::NumberParser; {
     
     # Handle hexadecimal
     if (System::Globalization::NumberStyles::HasFlag($style, 
-        System::Globalization::NumberStyles::AllowHexSpecifier)) {
+        System::Globalization::NumberStyles::AllowHexSpecifier())) {
       # Remove 0x prefix if present
       $cleaned =~ s/^0x//i;
       
@@ -130,7 +130,7 @@ package System::Globalization::NumberParser; {
     
     # Handle exponential notation
     if (System::Globalization::NumberStyles::HasFlag($style, 
-        System::Globalization::NumberStyles::AllowExponent)) {
+        System::Globalization::NumberStyles::AllowExponent())) {
       # This is complex - for now, let Perl handle it
       if ($cleaned =~ /[eE]/) {
         eval {
@@ -161,7 +161,7 @@ package System::Globalization::NumberParser; {
     
     # Handle hexadecimal - already converted in _CleanNumberString
     if (System::Globalization::NumberStyles::HasFlag($style, 
-        System::Globalization::NumberStyles::AllowHexSpecifier)) {
+        System::Globalization::NumberStyles::AllowHexSpecifier())) {
       return $value;  # Already converted
     }
     
