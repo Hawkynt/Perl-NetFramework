@@ -1,12 +1,17 @@
 # 🐪 Perl-NetFramework
 
-![License](https://img.shields.io/github/license/Hawkynt/Perl-NetFramework)
-![Language](https://img.shields.io/github/languages/top/Hawkynt/Perl-NetFramework?color=purple)
-[![Last Commit](https://img.shields.io/github/last-commit/Hawkynt/Perl-NetFramework?branch=main)![Activity](https://img.shields.io/github/commit-activity/y/Hawkynt/Perl-NetFramework?branch=main)](https://github.com/Hawkynt/Perl-NetFramework/commits/main)
-[![Tests](https://github.com/Hawkynt/Perl-NetFramework/actions/workflows/tests.yml/badge.svg)](https://github.com/Hawkynt/Perl-NetFramework/actions/workflows/tests.yml)
-[![Release](https://github.com/Hawkynt/Perl-NetFramework/actions/workflows/release.yml/badge.svg)](https://github.com/Hawkynt/Perl-NetFramework/actions/workflows/release.yml)
-[![GitHub release](https://img.shields.io/github/v/release/Hawkynt/Perl-NetFramework)](https://github.com/Hawkynt/Perl-NetFramework/releases/latest)
-[![Downloads](https://img.shields.io/github/downloads/Hawkynt/Perl-NetFramework/total)](https://github.com/Hawkynt/Perl-NetFramework/releases)
+[![License](https://img.shields.io/github/license/Hawkynt/Perl-NetFramework)](https://github.com/Hawkynt/Perl-NetFramework/blob/main/LICENSE)
+[![Language](https://img.shields.io/github/languages/top/Hawkynt/Perl-NetFramework?color=8957D5)](https://github.com/Hawkynt/Perl-NetFramework)
+
+[![CI](https://github.com/Hawkynt/Perl-NetFramework/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/Hawkynt/Perl-NetFramework/actions/workflows/ci.yml)
+![Last Commit](https://img.shields.io/github/last-commit/Hawkynt/Perl-NetFramework?branch=main)
+![Activity](https://img.shields.io/github/commit-activity/m/Hawkynt/Perl-NetFramework)
+
+[![Stars](https://img.shields.io/github/stars/Hawkynt/Perl-NetFramework?color=FFD700)](https://github.com/Hawkynt/Perl-NetFramework/stargazers)
+[![Forks](https://img.shields.io/github/forks/Hawkynt/Perl-NetFramework?color=008080)](https://github.com/Hawkynt/Perl-NetFramework/network/members)
+[![Issues](https://img.shields.io/github/issues/Hawkynt/Perl-NetFramework)](https://github.com/Hawkynt/Perl-NetFramework/issues)
+![Code Size](https://img.shields.io/github/languages/code-size/Hawkynt/Perl-NetFramework?color=4CAF50)
+![Repo Size](https://img.shields.io/github/repo-size/Hawkynt/Perl-NetFramework?color=FF9800)
 
 > 🚀 A comprehensive clone of the .NET Framework Base Class Library (BCL) implemented in pure Perl.
 
@@ -1028,7 +1033,7 @@ perl run_tests.pl --pattern "System*" # System tests only
 - **Random Number Generation**: System::Random with advanced algorithms and distributions ✅
 - **Cross-Type Integration**: All components work seamlessly together ✅
 - **Lazy Evaluation**: All LINQ operators properly implement deferred execution ✅
-- **Comprehensive Testing**: 400+ tests across all major components with excellent pass rates ✅
+- **Comprehensive Testing**: an extensive test suite across all major components with strong pass rates ✅
 
 #### 🎯 **Latest Updates & Improvements (December 2024)**
 
