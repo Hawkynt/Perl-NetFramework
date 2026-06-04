@@ -41,10 +41,6 @@ jobs:
         cpanm --notest Tk || echo "Tk installation failed, skipping GUI tests"
         cpanm --notest Image::Xbm || echo "Image::Xbm installation failed, continuing"
     
-    - name: Fix test runner path issue
-      run: |
-        sed -i 's|File::Spec->catdir(".", "tests")|File::Spec->catdir("tests")|' tests/run_tests.pl
-    
     - name: Run syntax check on core modules
       run: |
         echo "Checking CSharp.pm..."
@@ -87,8 +83,7 @@ jobs:
     
     - name: Run test suite
       run: |
-        cd tests
-        perl run_tests.pl || echo "Some tests failed, but continuing for now"
+        perl tests/TestRunner.pl || echo "Some tests failed, but continuing for now"
     
     - name: Test embedded test methods
       run: |
