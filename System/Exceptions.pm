@@ -452,20 +452,6 @@ package System::IO::EndOfStreamException;{
   BEGIN{CSharp::_ShortenPackageName(__PACKAGE__);}
 };
 
-# thrown when thread state is invalid for operation
-package System::Threading::ThreadStateException;{
-  use base 'System::Exception';
-
-  sub new {
-    my $class=shift(@_);
-    my($m,$innerException)=@_;
-    my $this=System::Exception::new($class,$m||"Thread was in an invalid state for the operation being executed.",$innerException);
-    return($this);
-  }
-  
-  BEGIN{CSharp::_ShortenPackageName(__PACKAGE__);}
-};
-
 # thrown when thread is aborted
 package System::Threading::ThreadAbortException;{
   use base 'System::Exception';

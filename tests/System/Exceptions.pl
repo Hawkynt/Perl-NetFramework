@@ -10,6 +10,7 @@ use System;
 use System::Object;
 use System::Exception;
 use System::Exceptions;
+use System::Threading::ThreadStateException;
 use CSharp;
 
 BEGIN {

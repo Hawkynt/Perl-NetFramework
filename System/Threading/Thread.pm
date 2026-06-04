@@ -7,6 +7,7 @@ package System::Threading::Thread; {
   require System::Exceptions;
   require System::TimeSpan;
   require System::String;
+  require System::Threading::ThreadStateException;
   
   # Thread states
   use constant Unstarted => 0;
