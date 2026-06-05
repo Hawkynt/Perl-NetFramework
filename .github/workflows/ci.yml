@@ -63,8 +63,6 @@ jobs:
         perl -I. -c System.pm
 
     # REQUIRED tier: the C# filter is the heart of this repo - its tests must pass.
-    # ! CSharp_Constructor.pl stays advisory until its two filter bugs are fixed
-    #   (field-init accessor + multi-class namespace parsing).
     - name: Test (core)
       shell: bash
       run: |
@@ -73,6 +71,7 @@ jobs:
         perl -I. tests/Filter/CSharp_Foreach.pl
         perl -I. tests/Filter/CSharp_Comprehensive.pl
         perl -I. tests/Filter/CSharp_LineNumbers.pl
+        perl -I. tests/Filter/CSharp_Constructor.pl
 
     # ADVISORY tier: full per-file suite. Known-red files exist (tracked backlog),
     # so a failure here never blocks a merge - but hangs do fail it fast.

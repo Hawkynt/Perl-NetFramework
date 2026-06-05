@@ -8,7 +8,7 @@ use File::Spec;
 # Test the Filter::CSharp syntax transformations by using MO=Deparse 
 # to see the actual transformed code and then testing the behavior
 
-plan tests => 20;
+plan tests => 19;
 
 # First, test that the Filter::CSharp module loads
 use_ok('Filter::CSharp') or BAIL_OUT("Cannot load Filter::CSharp");
@@ -89,7 +89,7 @@ test_simple_transformation(
 # Test 4: new keyword transformation
 test_simple_transformation(
     "use Filter::CSharp;\nmy \$obj = new TestClass('arg');",
-    qr/TestClass->new/,
+    qr/'?TestClass'?->new/,
     "new keyword transforms to ->new"
 );
 
@@ -242,5 +242,3 @@ eval {
     pass("Property registration works") if exists $meta->{propertyInfos}->{testProperty};
 };
 fail("Property registration failed: $@") if $@;
-
-done_testing();

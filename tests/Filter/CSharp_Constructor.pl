@@ -7,7 +7,7 @@ use File::Temp qw(tempfile);
 # Test C# constructor/destructor functionality using Filter::CSharp
 # Based on original CtorTest.pl from x/ directory
 
-plan tests => 8;
+plan tests => 9;
 
 # Test that Filter::CSharp loads
 use_ok('Filter::CSharp') or BAIL_OUT("Cannot load Filter::CSharp");
@@ -184,8 +184,6 @@ test_csharp_execution($multiple_classes, qr/A constructed.*B constructed.*done/s
 # Test 8: Constructor/Destructor pattern exists (meta test)
 can_ok('Filter::CSharp', '_CreateMeta');
 can_ok('Filter::CSharp', '_BasicCtor');
-
-done_testing();
 
 print "\n" . "=" x 60 . "\n";
 print "C# CONSTRUCTOR/DESTRUCTOR TEST SUMMARY\n";

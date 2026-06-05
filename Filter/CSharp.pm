@@ -25,6 +25,54 @@ package Filter::CSharp;{
   
   #region methods used by the code filter
   
+  # converts a C# parameter list (e.g. "int x, string y") into a
+  # comma separated list of perl scalars (e.g. "$x, $y").
+  # already sigiled parameters (e.g. "$a") are kept verbatim.
+  # type tokens, modifiers (ref/out/in/params) and default values are stripped.
+  sub _ParseParameterList($){
+    my($params)=@_;
+    $params="" unless(defined($params));
+    # trim
+    $params=~s/^\s+//;
+    $params=~s/\s+$//;
+    return("") if($params eq "");
+    my @result=();
+    foreach my $part (split(/\s*,\s*/,$params)){
+      next if($part eq "");
+      # already a perl variable? keep as-is (strip a possible default value)
+      if($part=~m/^([\$\@\%\&][a-z_A-Z][a-z_A-Z0-9]*)/){
+        push(@result,$1);
+        next;
+      }
+      # drop default value part
+      $part=~s/=.*$//;
+      $part=~s/\s+$//;
+      # the parameter name is the last identifier token
+      if($part=~m/([a-z_A-Z][a-z_A-Z0-9]*)\s*$/){
+        push(@result,'$'.$1);
+      }
+    }
+    return(join(",",@result));
+  }
+
+  # sigils plain C# identifier references to the given parameter names inside a
+  # method body.  C# bodies reference parameters without a sigil (e.g. "return a+b;")
+  # whereas perl needs "$a".  Occurrences that are member accesses (x.y, x->y),
+  # package qualifications (X::y), already sigiled tokens or string contents are
+  # left untouched.  This is a best-effort transform for simple method bodies.
+  sub _SigilLocals($$){
+    my($body,$names)=@_;
+    return($body) unless(@$names);
+    my $alternation=join("|",map{quotemeta($_)}@$names);
+    # split off double quoted strings so we never touch their contents
+    my @parts=split(/("(?:\\.|[^"\\])*")/,$body);
+    for(my $idx=0;$idx<@parts;$idx++){
+      next if($idx%2);# odd indices are the captured string literals
+      $parts[$idx]=~s/(?<![\$\@\%\&\w.>:])($alternation)(?![\w(:])/\$$1/g;
+    }
+    return(join("",@parts));
+  }
+
   # for implementing "using(var x){}"
   sub _Using($$$){
     my($oldArgs,$var,$call)=@_;
@@ -235,7 +283,13 @@ package Filter::CSharp;{
     }
     
     no warnings;
-    
+
+    # Many rules below use a (?<=\s) lookbehind to detect a leading keyword.
+    # The very first token of the filtered buffer has no preceding whitespace,
+    # so prepend a single space.  A space (not a newline) keeps the line
+    # numbering of the original source intact.
+    $_=" ".$_;
+
     #### handle class definitions
     # namespace Test{static class ClassName{
     # namespace Test{public static class ClassName{
@@ -263,31 +317,76 @@ package Filter::CSharp;{
     # namespace Test{internal class ClassName:BaseClass{
     # namespace Test::Sub{internal class ClassName:BaseClass{
     my $replacer=sub{
-      my($s0,$namespace,$s1,$accessModifier,$isStatic,$isPartial,$className,$baseNames,$s2)=@_;
+      my($namespace,$s0,$accessModifier,$isStatic,$isPartial,$className,$baseNames,$s2)=@_;
       my $result="";
-      $result.="package${s0}${namespace}::${className};${s1}";
+      $result.="package${s0}${namespace}::${className};";
       $result.="use base ".(defined($baseNames)?(join",",map{"'$_'"}split(/\s*,\s*/,$baseNames)).",":"")."'System::Object';$s2";
       $result.="use CSharp;";
       $result.="our \$__meta=Filter::CSharp::_CreateMeta(__PACKAGE__,__FILE__,'$className','$baseNames','$isStatic','$accessModifier');";# unless($isPartial);
       $result.="sub new(\$;\@){return(Filter::CSharp::_BasicCtor(__PACKAGE__,'$className',\$__meta,\@_));}sub DESTROY(\$){Filter::CSharp::_BasicDtor(__PACKAGE__,'$className',\@_);}" unless($isPartial||$isStatic);
       return($result);
     };
-    s/(?<=\s)namespace(\s+)([a-z_A-Z][a-z_A-Z0-9]*(?:::[a-z_A-Z][a-z_A-Z0-9]*)*)(\s*\{\s*)(?:(private|public|protected|internal)(?:\s+))?(?:(static)(?:\s+))?(?:(partial)(?:\s+))?class(?:\s+)([a-z_A-Z][a-z_A-Z0-9]*)(?:\s*:\s*((?:[a-z_A-Z][a-z_A-Z0-9]*(?:::[a-z_A-Z][a-z_A-Z0-9]*)*)(?:\s*,\s*(?:[a-z_A-Z][a-z_A-Z0-9]*(?:::[a-z_A-Z][a-z_A-Z0-9]*)*))*))?(\s*\{)/$replacer->($1,$2,$3,$4,$5,$6,$7,$8,$9)/eg;
+    # transforms every class declaration found inside a namespace body.
+    # the namespace name is supplied so multiple classes per namespace work.
+    my $classReplacer=sub{
+      my($namespace,$body)=@_;
+      $body=~s/(?<=\s)(?:(private|public|protected|internal)(?:\s+))?(?:(static)(?:\s+))?(?:(partial)(?:\s+))?class(?:\s+)([a-z_A-Z][a-z_A-Z0-9]*)(?:\s*:\s*((?:[a-z_A-Z][a-z_A-Z0-9]*(?:::[a-z_A-Z][a-z_A-Z0-9]*)*)(?:\s*,\s*(?:[a-z_A-Z][a-z_A-Z0-9]*(?:::[a-z_A-Z][a-z_A-Z0-9]*)*))*))?(\s*\{)/$replacer->($namespace,' ',$1,$2,$3,$4,$5,$6)/eg;
+      return($body);
+    };
+    # process each "namespace NAME { ... }" block, brace-matching its body,
+    # then rewrite the contained class declarations.  The namespace braces are
+    # preserved as a plain perl block so multiple classes nest correctly.
+    {
+      my $out="";
+      while($_=~m/\Gnamespace(\s+)([a-z_A-Z][a-z_A-Z0-9]*(?:::[a-z_A-Z][a-z_A-Z0-9]*)*)(\s*)\{/gc
+            || $_=~m/\G(.)/gcs){
+        # only treat it as a namespace keyword when it is a standalone token
+        if(defined($2) && $out=~m/[a-z_A-Z0-9]$/){
+          $out.="namespace".$1.$2.$3."{";
+          next;
+        }
+        if(defined($2)){
+          my $namespace=$2;
+          # preserve any newlines that were part of the "namespace NAME {" text
+          # so line numbers stay intact, then open a plain perl block.
+          my $consumed="namespace".$1.$2.$3;
+          my $newlines=($consumed=~tr/\n//);
+          $out.=("\n" x $newlines)."{";
+          # find the matching closing brace for this namespace block
+          my $depth=1;
+          my $bodyStart=pos($_);
+          my $i=$bodyStart;
+          my $len=length($_);
+          while($i<$len && $depth>0){
+            my $ch=substr($_,$i,1);
+            $depth++ if($ch eq "{");
+            $depth-- if($ch eq "}");
+            $i++;
+          }
+          my $body=substr($_,$bodyStart,$i-1-$bodyStart);
+          $out.=$classReplacer->($namespace,$body)."}";
+          pos($_)=$i;
+        } else {
+          $out.=$1;
+        }
+      }
+      $_=$out;
+    }
   
   
     #### handle static ctor/dtor
     # static ctor(){
-    s/(?<=\s)((?:package\s+)(?:[a-z_A-Z][a-z_A-Z0-9]*::)*([a-z_A-Z][a-z_A-Z0-9]*)\s*;.*?\s)(?:(?:public|private|internal|protected)(\s+))?static(\s+)\2(\s*)\((.*?)\)(\s*\{)/$1sub $3$4__cctor_$2$5(\$;\@)$7my(\$class,$6)=\@_;shift(\@_);/gs;
-    
+    s/(?<=\s)((?:package\s+)(?:[a-z_A-Z][a-z_A-Z0-9]*::)*([a-z_A-Z][a-z_A-Z0-9]*)\s*;.*?\s)(?:(?:public|private|internal|protected)(\s+))?static(\s+)\2(\s*)\((.*?)\)(\s*\{)/"$1sub $3$4__cctor_$2$5(\@)$7my(\$class".(Filter::CSharp::_ParseParameterList($6) ne "" ? ",".Filter::CSharp::_ParseParameterList($6) : "").")=\@_;shift(\@_);"/gse;
+
     # static ~ctor(){
-    s/(?<=\s)((?:package\s+)(?:[a-z_A-Z][a-z_A-Z0-9]*::)*([a-z_A-Z][a-z_A-Z0-9]*)\s*;.*?\s)(?:(?:public|private|internal|protected)(\s+))?static(\s+)~\2(\s*)\((.*?)\)(\s*\{)/$1sub $3$4__cdtor_$2$5(\$;\@)$7my(\$class,$6)=\@_;shift(\@_);/gs;
-    
+    s/(?<=\s)((?:package\s+)(?:[a-z_A-Z][a-z_A-Z0-9]*::)*([a-z_A-Z][a-z_A-Z0-9]*)\s*;.*?\s)(?:(?:public|private|internal|protected)(\s+))?static(\s+)~\2(\s*)\((.*?)\)(\s*\{)/"$1sub $3$4__cdtor_$2$5(\@)$7my(\$class".(Filter::CSharp::_ParseParameterList($6) ne "" ? ",".Filter::CSharp::_ParseParameterList($6) : "").")=\@_;shift(\@_);"/gse;
+
     #### handle instance ctor/dtor
     # ctor(){
-    s/(?<=\s)((?:package\s+)(?:[a-z_A-Z][a-z_A-Z0-9]*::)*([a-z_A-Z][a-z_A-Z0-9]*)\s*;.*?\s)(?:(?:public|private|internal|protected)(\s+))?\2(\s*)\((.*?)\)(\s*\{)/$1sub $3$4__ctor_$2(\$;\@)$6my(\$this,$5)=\@_;shift(\@_);/gs;
-    
+    s/(?<=\s)((?:package\s+)(?:[a-z_A-Z][a-z_A-Z0-9]*::)*([a-z_A-Z][a-z_A-Z0-9]*)\s*;.*?\s)(?:(?:public|private|internal|protected)(\s+))?\2(\s*)\((.*?)\)(\s*\{)/"$1sub $3$4__ctor_$2(\@)$6my(\$this".(Filter::CSharp::_ParseParameterList($5) ne "" ? ",".Filter::CSharp::_ParseParameterList($5) : "").")=\@_;shift(\@_);"/gse;
+
     # ~ctor(){
-    s/(?<=\s)((?:package\s+)(?:[a-z_A-Z][a-z_A-Z0-9]*::)*([a-z_A-Z][a-z_A-Z0-9]*)\s*;.*?\s)(?:(?:public|private|internal|protected)(\s+))?~\2(\s*)\((.*?)\)(\s*\{)/$1sub $3$4__dtor_$2(\$;\@)$6my(\$this,$5)=\@_;shift(\@_);/gs;
+    s/(?<=\s)((?:package\s+)(?:[a-z_A-Z][a-z_A-Z0-9]*::)*([a-z_A-Z][a-z_A-Z0-9]*)\s*;.*?\s)(?:(?:public|private|internal|protected)(\s+))?~\2(\s*)\((.*?)\)(\s*\{)/"$1sub $3$4__dtor_$2(\@)$6my(\$this".(Filter::CSharp::_ParseParameterList($5) ne "" ? ",".Filter::CSharp::_ParseParameterList($5) : "").")=\@_;shift(\@_);"/gse;
   
     #### handle static methods
     # static method(){
@@ -296,13 +395,48 @@ package Filter::CSharp;{
     
     # static method($a){
     # public static method($a){
-    s/(?<=\s)(?:(?:private|public|internal|protected)(\s+))?static(\s+)(?:[a-z_A-Z0-9][a-z_A-Z0-9\:\,\.\<\>\[\]]*)(\s+)([a-z_A-Z][a-zA-Z_0-9]+)(\s*)\((.*?)\)(\s*\{)/sub $1$2$3$4$5(\@)$7my($6)=\@_;/g;
-  
+    s/(?<=\s)(?:(?:private|public|internal|protected)(\s+))?static(\s+)(?:[a-z_A-Z0-9][a-z_A-Z0-9\:\,\.\<\>\[\]]*)(\s+)([a-z_A-Z][a-zA-Z_0-9]+)(\s*)\((.*?)\)(\s*\{)/"sub $1$2$3$4$5(\@)$7".(Filter::CSharp::_ParseParameterList($6) ne "" ? "my(\$class,".Filter::CSharp::_ParseParameterList($6).")=\@_;shift(\@_);" : "")/ge;
+
     #### handle instance methods
     # private method(){
     # public method($a){
-    s/(?<=\s)(?:(?:private|public|internal|protected)(\s+))(?:[a-z_A-Z0-9][a-z_A-Z0-9\:\,\.\<\>\[\]]*)(\s+)([a-z_A-Z][a-zA-Z_0-9]+)(\s*)\((.*?)\)(\s*\{)/sub $1$2$3$4(\$;\@)$6my(\$this,$5)=\@_;shift(\@_);/g;
-  
+    s/(?<=\s)(?:(?:private|public|internal|protected)(\s+))(?:[a-z_A-Z0-9][a-z_A-Z0-9\:\,\.\<\>\[\]]*)(\s+)([a-z_A-Z][a-zA-Z_0-9]+)(\s*)\((.*?)\)(\s*\{)/"sub $1$2$3$4(\@)$6my(\$this".(Filter::CSharp::_ParseParameterList($5) ne "" ? ",".Filter::CSharp::_ParseParameterList($5) : "").")=\@_;shift(\@_);"/ge;
+
+    #### sigil C# parameter references inside method/ctor bodies
+    # locate every generated "my($this|$class,$p,...)=@_;" preamble and sigil
+    # bare references to those parameters within the following brace-matched body.
+    {
+      my $out="";
+      while($_=~m/\Gmy\((\$this|\$class)((?:,\$[a-z_A-Z][a-z_A-Z0-9]*)+)\)=\@_;(?:shift\(\@_\);)?/gc
+            || $_=~m/\G(.)/gcs){
+        if(defined($2)){
+          my $preamble=$&;
+          my $paramPart=$2;
+          my @names=();
+          push(@names,$1) while($paramPart=~m/,\$([a-z_A-Z][a-z_A-Z0-9]*)/g);
+          $out.=$preamble;
+          # capture this body up to its matching closing brace
+          my $start=pos($_);
+          my $i=$start;
+          my $len=length($_);
+          my $depth=1;
+          while($i<$len && $depth>0){
+            my $ch=substr($_,$i,1);
+            $depth++ if($ch eq "{");
+            $depth-- if($ch eq "}");
+            last if($depth==0);
+            $i++;
+          }
+          my $body=substr($_,$start,$i-$start);
+          $out.=Filter::CSharp::_SigilLocals($body,\@names);
+          pos($_)=$i;
+        } else {
+          $out.=$1;
+        }
+      }
+      $_=$out;
+    }
+
     #### handle static properties
     # public static int test {get;private set;}
     s/(?<=\s)(?:(?:public|private|protected|internal)(\s+))?static(\s+)([a-z_A-Z0-9][a-z_A-Z0-9\:\,\.\<\>\[\]]*)(\s+)([a-z_A-Z][a-zA-Z_0-9]*)(\s*)\{(\s*)(?:(?:public|private|protected|internal)\s+)?get;(\s*)(?:(?:public|private|protected|internal)\s+)?set;(\s*)\}/$1$2$4Filter::CSharp::_RegisterProperty(\$__meta,'$3',1,1,1,__FILE__,__LINE__,'$5');Filter::CSharp::_RegisterField(\$__meta,'$3',1,1,1,1,__FILE__,__LINE__,'__$5_k__BackingField');\{my \$__$5_k__BackingField; sub $5(\$;\$)$6\{my(\$class,\$value)=\@_;shift(\@_); throw(System::ArgumentException->new('class'))unless(defined(\$class)&&\$class eq \__PACKAGE__); $7return(\$__$5_k__BackingField) if(scalar(\@_)<1); $8\$__$5_k__BackingField=\$value;}$9}/g;
@@ -364,15 +498,30 @@ package Filter::CSharp;{
     # public static int a=
     s/(?<=\s)(?:(?:public|protected|internal)(\s+))?static(\s+)(?:readonly(\s+))?([a-z_A-Z0-9][a-z_A-Z0-9\:\,\.\<\>\[\]]*)(\s+)([a-z_A-Z][a-z_A-Z0-9]*\s*)([=;])/$1Filter::CSharp::_RegisterField(\$__meta,'$4',1,0,1,1,__FILE__,__LINE__,'$6');our$2$3$5\$$6$7/g;
     
+    # public/protected/internal int a=  (publicly accessible field -> generate accessor)
+    s/(?<=\s)(?:(public|internal|protected)(\s+))(?:readonly(\s+))?([a-z_A-Z0-9][a-z_A-Z0-9\:\,\.\<\>\[\]]*)(\s+)([a-z_A-Z][a-z_A-Z0-9]*)(\s*)=(\s*)(.*?);/$2$3$5Filter::CSharp::_RegisterField(\$__meta,'$4',0,0,1,1,__FILE__,__LINE__,'$6',sub{return($7$8$9);});sub $6(\$;\@)\{return(Filter::CSharp::_GetSetFieldValue(__PACKAGE__,'$6',\@_));\}/g;
+
     # private int a=
-    s/(?<=\s)(?:(?:private|public|internal|protected)(\s+))(?:readonly(\s+))?([a-z_A-Z0-9][a-z_A-Z0-9\:\,\.\<\>\[\]]*)(\s+)([a-z_A-Z][a-z_A-Z0-9]*)(\s*)=(\s*)(.*?);/$1$2$4Filter::CSharp::_RegisterField(\$__meta,'$3',0,0,1,1,__FILE__,__LINE__,'$5',sub{return($6$7$8);});/g;
-    
+    s/(?<=\s)(?:(?:private)(\s+))(?:readonly(\s+))?([a-z_A-Z0-9][a-z_A-Z0-9\:\,\.\<\>\[\]]*)(\s+)([a-z_A-Z][a-z_A-Z0-9]*)(\s*)=(\s*)(.*?);/$1$2$4Filter::CSharp::_RegisterField(\$__meta,'$3',0,0,1,1,__FILE__,__LINE__,'$5',sub{return($6$7$8);});/g;
+
+    # public/protected/internal int a;  (publicly accessible field -> generate accessor)
+    s/(?<=\s)(?:(public|internal|protected)(\s+))(?:readonly(\s+))?([a-z_A-Z0-9][a-z_A-Z0-9\:\,\.\<\>\[\]]*)(\s+)([a-z_A-Z][a-z_A-Z0-9]*)(\s*);/$2$3$5Filter::CSharp::_RegisterField(\$__meta,'$4',0,0,1,1,__FILE__,__LINE__,'$6');sub $6(\$;\@)\{return(Filter::CSharp::_GetSetFieldValue(__PACKAGE__,'$6',\@_));\}/g;
+
     # private int a;
-    s/(?<=\s)(?:(?:private|public|internal|protected)(\s+))(?:readonly(\s+))?([a-z_A-Z0-9][a-z_A-Z0-9\:\,\.\<\>\[\]]*)(\s+)([a-z_A-Z][a-z_A-Z0-9]*)(\s*);/$1$2$4Filter::CSharp::_RegisterField(\$__meta,'$3',0,0,1,1,__FILE__,__LINE__,'$5');$6/g;
+    s/(?<=\s)(?:(?:private)(\s+))(?:readonly(\s+))?([a-z_A-Z0-9][a-z_A-Z0-9\:\,\.\<\>\[\]]*)(\s+)([a-z_A-Z][a-z_A-Z0-9]*)(\s*);/$1$2$4Filter::CSharp::_RegisterField(\$__meta,'$3',0,0,1,1,__FILE__,__LINE__,'$5');$6/g;
   
+    # this.Property = expr;  -> $this->Property(expr);
+    # PascalCase members follow the C# property convention and own an accessor,
+    # so an assignment must route through the setter method rather than the field
+    # hash.  lowercase members are plain fields and handled by the rules below.
+    s/(?<=[^a-zA-Z0-9_\$\@\%\&])this\.([A-Z][a-z_A-Z0-9]*)(\s*)=(?!=)(\s*)(.*?);/\$this->$1($4);/g;
+
     # this.Method(
     s/(?<=[^a-zA-Z0-9_\$\@\%\&])this\.([a-z_A-Z][a-z_A-Z0-9]*)\(/\$this->$1(/g;
-    
+
+    # this.Property (read)  -> $this->Property()
+    s/(?<=[^a-zA-Z0-9_\$\@\%\&])this\.([A-Z][a-z_A-Z0-9]*)(?![a-z_A-Z0-9\(])/\$this->$1()/g;
+
     # this.field
     s/(?<=[^a-zA-Z0-9_\$\@\%\&])this\.([a-z_A-Z][a-z_A-Z0-9]*)/\$this->{'$1'}/g;
     
