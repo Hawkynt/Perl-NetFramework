@@ -197,7 +197,7 @@ sub test_aggregate_exception_flatten {
     eval {
         System::AggregateException::Flatten(undef);
     };
-    $caught = $@;
+    my $caught = $@;
     isa_ok($caught, 'System::NullReferenceException', 'Flatten throws NullReferenceException for undef this');
 }
 
