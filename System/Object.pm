@@ -1,8 +1,48 @@
 package System::Object; {
-  
+
   use CSharp;
   require System::Exceptions;
-  
+  use Scalar::Util ();
+
+  use overload
+    'eq' => \&_OpEq,
+    'ne' => \&_OpNe,
+    '==' => \&_OpNumEq,
+    '!=' => \&_OpNumNe,
+    fallback => 1,
+  ;
+
+  # Reference-equality based comparison operators (.NET semantics).
+  # System::String overrides these with value-equality; the most-derived
+  # class's overload wins, so String continues to do value comparison.
+  sub _OpEq {
+    my($this,$other)=@_;
+    return(false) unless(defined($other));
+    if(ref($other)){
+      return(Scalar::Util::refaddr($this)==Scalar::Util::refaddr($other)?true:false);
+    }
+    # compare against a plain string: stringify via ToString
+    my $text=eval{$this->ToString()};
+    $text=ref($this) unless(defined($text));
+    return($text eq $other?true:false);
+  }
+
+  sub _OpNe {
+    my($this,$other)=@_;
+    return($this->_OpEq($other)?false:true);
+  }
+
+  sub _OpNumEq {
+    my($this,$other)=@_;
+    return(false) unless(defined($other) && ref($other));
+    return(Scalar::Util::refaddr($this)==Scalar::Util::refaddr($other)?true:false);
+  }
+
+  sub _OpNumNe {
+    my($this,$other)=@_;
+    return($this->_OpNumEq($other)?false:true);
+  }
+
   sub new($){
     my($class)=@_;
     return(bless({},ref($class)||$class||__PACKAGE__));
@@ -23,7 +63,7 @@ package System::Object; {
     my($this)=@_;
     return(0)unless(defined($this));
     require Scalar::Util;
-    return(Scalar::Util::refaddr($this)||0);
+    return((Scalar::Util::refaddr($this)||0) & 0xFFFFFFFF);
   }
   
   sub ReferenceEquals {
@@ -74,8 +114,9 @@ package System::Object; {
       
       # If both are objects, use reference comparison
       if (ref($other)) {
-        eval { return ReferenceEquals($this, $other); };
+        my $eq = eval { ReferenceEquals($this, $other); };
         return false if $@; # If ReferenceEquals throws, objects are not equal
+        return $eq ? true : false;
       } else {
         return(false); # Object can't equal scalar
       }

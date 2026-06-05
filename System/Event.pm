@@ -6,7 +6,7 @@ package System::Event; {
   use CSharp;
   require System::Exceptions;
   require System::Delegate;
-  use Scalar::Util qw(refaddr);
+  use Scalar::Util qw(refaddr blessed);
   
   # Event - manages event handlers with add/remove functionality
   sub new {
@@ -26,20 +26,24 @@ package System::Event; {
     throw(System::NullReferenceException->new()) unless defined($this);
     throw(System::ArgumentNullException->new('handler')) unless defined($handler_ref);
     
-    # Check if it's a removal (negative reference)
-    my $handler_id = $$handler_ref;
-    
-    if (defined($handler_id) && $handler_id < 0) {
-      # Remove handler
-      return $this->RemoveHandler(abs($handler_id));
-    } else {
-      # Add new handler - handler_ref should be a delegate or code reference
-      throw(System::ArgumentException->new('handler must be a Delegate or CODE reference'))
-        unless (ref($handler_ref) eq 'CODE') || 
-               (ref($handler_ref) && $handler_ref->isa('System::Delegate'));
-      
-      return $this->AddHandler($handler_ref);
+    # A SCALAR reference encodes the add/remove pointer mechanism:
+    # a negative id means "remove", a positive id means "add (by id)".
+    if (ref($handler_ref) eq 'SCALAR') {
+      my $handler_id = $$handler_ref;
+      throw(System::ArgumentNullException->new('handler')) unless defined($handler_id);
+      if ($handler_id < 0) {
+        # Remove handler
+        return $this->RemoveHandler(abs($handler_id));
+      }
+      return $this->AddHandler($handler_id);
     }
+
+    # Add new handler - handler_ref should be a delegate or code reference
+    throw(System::ArgumentException->new('handler must be a Delegate or CODE reference'))
+      unless (ref($handler_ref) eq 'CODE') ||
+             (Scalar::Util::blessed($handler_ref) && $handler_ref->isa('System::Delegate'));
+
+    return $this->AddHandler($handler_ref);
   }
   
   # .NET-compatible Add/Remove methods

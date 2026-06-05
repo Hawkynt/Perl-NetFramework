@@ -7,8 +7,13 @@ package System::Exception; {
   use strict;
   use warnings;
 
-  use overload 
+  use overload
     '""'=>\&ToString,
+    'eq'=>\&System::Object::_OpEq,
+    'ne'=>\&System::Object::_OpNe,
+    '=='=>\&System::Object::_OpNumEq,
+    '!='=>\&System::Object::_OpNumNe,
+    fallback=>1,
   ;
 
   use constant {
