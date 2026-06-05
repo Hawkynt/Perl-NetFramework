@@ -1,0 +1,73 @@
+name: Build artifacts
+
+# Shared build/pack block. Called by release.yml (manual dispatch) and
+# nightly.yml (auto, on CI success). Single place that turns a commit into
+# shippable artifacts so release and nightly never diverge.
+#
+# PER-PACKAGE versioning: `version.pl --stamp` writes each manifest's OWN
+# version + the commit count of its parent folder. For this repo that is
+# System.pm's $VERSION (X.Y.BUILD).
+on:
+  workflow_call:
+    inputs:
+      ref:
+        description: Git ref/SHA to build (defaults to caller ref)
+        type: string
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+
+# Force JavaScript-based actions to run on Node 24 instead of the deprecated Node 20 ahead of
+# the 2026-06-16 hard cutover, until we bump each action to a Node-24-native major version.
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref || github.ref }}
+          fetch-depth: 0                         # version.pl counts commits
+
+      - name: Setup Perl
+        uses: shogo82148/actions-setup-perl@v1
+        with:
+          perl-version: '5.36'
+
+      - name: Determine distribution name (before stamping)
+        run: |
+          VERSION=$(perl .github/workflows/scripts/version.pl --list | awk -F'\t' '$1 ~ /System\.pm$/ { print $2 }')
+          if [ -z "$VERSION" ]; then
+            echo "::error::could not determine version from System.pm"
+            exit 1
+          fi
+          echo "DIST_NAME=Perl-NetFramework-${VERSION}" >> "$GITHUB_ENV"
+          echo "Distribution: Perl-NetFramework-${VERSION}"
+
+      - name: Stamp per-package versions
+        run: perl .github/workflows/scripts/version.pl --stamp
+
+      - name: Create CPAN distribution layout
+        run: |
+          mkdir -p lib/Filter
+          cp System.pm CSharp.pm lib/
+          cp Filter/CSharp.pm lib/Filter/
+          cp -r System lib/System
+
+      - name: Package distribution archives
+        run: |
+          mkdir -p "${DIST_NAME}" dist
+          cp -r lib tests Makefile.PL MANIFEST cpanfile README.md LICENSE "${DIST_NAME}/"
+          tar -czf "dist/${DIST_NAME}.tar.gz" "${DIST_NAME}"
+          zip -qr "dist/${DIST_NAME}.zip" "${DIST_NAME}"
+          ls -la dist/
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: app-artifacts
+          path: dist/*
+          if-no-files-found: error
