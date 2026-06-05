@@ -106,7 +106,7 @@ package System::Environment; {
   }
 
   sub CurrentManagedThreadId($) {
-    return(0) unless eval { require threads };
+    return(0) unless eval { require threads; threads->can('tid') ? 1 : 0 };
     return threads->tid();
   }
 

@@ -116,9 +116,11 @@ sub test_add_error_handling {
     eval { $ht->Add(NULL_KEY, TEST_VALUE1); };
     like($@, qr/ArgumentNullException/, 'Add with null key throws ArgumentNullException');
     
-    # Test 14: Add on null hashtable should throw exception
-    my $null_ht = undef;
-    eval { $null_ht->Add(TEST_KEY1, TEST_VALUE1); };
+    # Test 14: Add on null hashtable should throw exception.
+    # Call through the package function so the framework's `unless defined($this)`
+    # guard runs and raises NullReferenceException, instead of Perl's native
+    # "method on undef" error (cf. tests/System/StringEdgeCases.pl).
+    eval { System::Collections::Hashtable::Add(undef, TEST_KEY1, TEST_VALUE1); };
     like($@, qr/NullReferenceException/, 'Add on null hashtable throws NullReferenceException');
 }
 
@@ -162,9 +164,9 @@ sub test_get_operations {
     eval { $ht->Get(NULL_KEY); };
     like($@, qr/ArgumentNullException/, 'Get with null key throws ArgumentNullException');
     
-    # Test 22: Get on null hashtable should throw exception
-    my $null_ht = undef;
-    eval { $null_ht->Get(TEST_KEY1); };
+    # Test 22: Get on null hashtable should throw exception.
+    # Call through the package function so the framework's null guard runs.
+    eval { System::Collections::Hashtable::Get(undef, TEST_KEY1); };
     like($@, qr/NullReferenceException/, 'Get on null hashtable throws NullReferenceException');
 }
 
@@ -306,9 +308,9 @@ sub test_clear {
     $ht->Clear();
     is($ht->Count(), 0, 'Clear empty hashtable maintains zero count');
     
-    # Test 46: Clear null hashtable should throw exception
-    my $null_ht = undef;
-    eval { $null_ht->Clear(); };
+    # Test 46: Clear null hashtable should throw exception.
+    # Call through the package function so the framework's null guard runs.
+    eval { System::Collections::Hashtable::Clear(undef); };
     like($@, qr/NullReferenceException/, 'Clear on null hashtable throws NullReferenceException');
 }
 
@@ -336,9 +338,9 @@ sub test_count {
     $ht->Clear();
     is($ht->Count(), 0, 'Count is 0 after clear');
     
-    # Test 51: Count on null hashtable should throw exception
-    my $null_ht = undef;
-    eval { $null_ht->Count(); };
+    # Test 51: Count on null hashtable should throw exception.
+    # Call through the package function so the framework's null guard runs.
+    eval { System::Collections::Hashtable::Count(undef); };
     like($@, qr/NullReferenceException/, 'Count on null hashtable throws NullReferenceException');
 }
 
@@ -436,9 +438,13 @@ sub test_keys_collection {
     $ht->Add("key2", "value2");
     $ht->Add("key3", "value3");
     
-    # Test 60: Keys returns valid collection
+    # Test 60: Keys returns valid collection.
+    # Hashtable->Keys() projects entries via LINQ Select, which yields a lazy
+    # System::Linq::SelectCollection (not a SelectIterator). The relevant .NET
+    # contract is that the result is an enumerable collection of the keys, which
+    # SelectCollection satisfies (see the ToArray()/contents assertions below).
     my $keys = $ht->Keys();
-    isa_ok($keys, 'System::Linq::SelectIterator', 'Keys returns enumerable collection');
+    isa_ok($keys, 'System::Linq::SelectCollection', 'Keys returns enumerable collection');
     
     # Test 61: Keys collection has correct count
     my $keys_array = $keys->ToArray();
@@ -462,9 +468,12 @@ sub test_values_collection {
     $ht->Add("key2", "value2");
     $ht->Add("key3", NULL_VALUE);
     
-    # Test 64: Values returns valid collection
+    # Test 64: Values returns valid collection.
+    # As with Keys(), Values() projects via LINQ Select and yields a lazy
+    # System::Linq::SelectCollection (not a SelectIterator); it is an enumerable
+    # collection of the values, verified by the ToArray()/contents checks below.
     my $values = $ht->Values();
-    isa_ok($values, 'System::Linq::SelectIterator', 'Values returns enumerable collection');
+    isa_ok($values, 'System::Linq::SelectCollection', 'Values returns enumerable collection');
     
     # Test 65: Values collection has correct count
     my $values_array = $values->ToArray();
@@ -494,28 +503,29 @@ sub test_values_collection {
 #===========================================
 
 sub test_null_reference_exceptions {
-    my $null_ht = undef;
-    
-    # Test 68-75: All major methods should throw NullReferenceException on null hashtable
-    eval { $null_ht->GetEnumerator(); };
+    # Test 68-75: All major methods should throw NullReferenceException on a null
+    # hashtable. Call through the package functions (passing undef as the
+    # invocant) so the framework's `unless defined($this)` guards run and raise
+    # NullReferenceException, rather than Perl's native "method on undef" error.
+    eval { System::Collections::Hashtable::GetEnumerator(undef); };
     like($@, qr/NullReferenceException/, 'GetEnumerator on null hashtable throws NullReferenceException');
-    
-    eval { $null_ht->Keys(); };
+
+    eval { System::Collections::Hashtable::Keys(undef); };
     like($@, qr/NullReferenceException/, 'Keys on null hashtable throws NullReferenceException');
-    
-    eval { $null_ht->Values(); };
+
+    eval { System::Collections::Hashtable::Values(undef); };
     like($@, qr/NullReferenceException/, 'Values on null hashtable throws NullReferenceException');
-    
-    eval { $null_ht->AddOrUpdate("key", "value"); };
+
+    eval { System::Collections::Hashtable::AddOrUpdate(undef, "key", "value"); };
     like($@, qr/NullReferenceException/, 'AddOrUpdate on null hashtable throws NullReferenceException');
-    
-    eval { $null_ht->ContainsValue("value"); };
+
+    eval { System::Collections::Hashtable::ContainsValue(undef, "value"); };
     like($@, qr/NullReferenceException/, 'ContainsValue on null hashtable throws NullReferenceException');
-    
-    eval { $null_ht->Item("key"); };
+
+    eval { System::Collections::Hashtable::Item(undef, "key"); };
     like($@, qr/NullReferenceException/, 'Item on null hashtable throws NullReferenceException');
-    
-    eval { $null_ht->Set("key", "value"); };
+
+    eval { System::Collections::Hashtable::Set(undef, "key", "value"); };
     like($@, qr/NullReferenceException/, 'Set on null hashtable throws NullReferenceException');
 }
 

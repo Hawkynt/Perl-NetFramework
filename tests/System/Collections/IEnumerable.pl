@@ -3,6 +3,7 @@ use strict;
 use warnings;
 use lib '../../../';
 use Test::More;
+use overload ();  # for overload::Method() introspection
 use System;
 
 BEGIN {
@@ -36,8 +37,11 @@ sub test_interface_definition {
 }
 
 sub test_overload_operators {
-    # Test 4: Array overload operator is defined
-    ok(System::Collections::IEnumerable->can('({}'), 'IEnumerable has overload operators');
+    # Test 4: Array overload operator is defined.
+    # IEnumerable overloads the ARRAY-dereference operator (@{}), which the perl
+    # overload machinery registers under the method name "(@{}" - not the
+    # hash-dereference "({}" that was originally checked here.
+    ok(System::Collections::IEnumerable->can('(@{}'), 'IEnumerable has overload operators');
     
     # Test 5: Fallback overload is enabled
     ok(1, 'Overload fallback enabled (implicit test)');
@@ -52,8 +56,12 @@ sub test_array_overload_with_hashtable {
     $ht->Add(TEST_KEY1, TEST_VALUE1);
     $ht->Add(TEST_KEY2, TEST_VALUE2);
     
-    # Test 6: Array overload returns array reference
-    my $array_ref = eval { @$ht };
+    # Test 6: Array overload returns array reference.
+    # `@$ht` invokes the @{} overload, which yields an array reference that perl
+    # then dereferences. Assigning the dereference to a scalar would just capture
+    # the element count, so to inspect the array reference itself we take a
+    # reference to the dereferenced list.
+    my $array_ref = eval { [ @$ht ] };
     ok(!$@, 'Array overload does not throw exception');
     is(ref($array_ref), 'ARRAY', 'Array overload returns array reference') if defined $array_ref;
     
@@ -85,8 +93,14 @@ sub test_array_overload_with_system_array {
         # Create a System::Array instance if possible
         my $sys_array = System::Array->new("System.String", 3);
         if ($sys_array && $sys_array->isa("System::Collections::IEnumerable")) {
-            my $result = eval { @$sys_array };
-            is($result, $sys_array, 'System::Array returns itself in array overload') if defined $result;
+            # The @{} overload short-circuits for System::Array and returns the
+            # array object itself (rather than building a new list). Writing
+            # `@$sys_array` would dereference that result, and capturing the
+            # dereference in a scalar would only yield the element count, so we
+            # invoke the overload handler directly to observe its return value.
+            my $handler = overload::Method($sys_array, '@{}');
+            my $result = $handler->($sys_array);
+            is($result, $sys_array, 'System::Array returns itself in array overload');
         } else {
             skip("System::Array not available or doesn't implement IEnumerable", 1);
         }

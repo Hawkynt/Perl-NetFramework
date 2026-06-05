@@ -111,9 +111,10 @@ package System::Threading::Thread; {
     
     $this->{_state} = Running;
     
-    # Check if threads are available
-    eval { require threads; };
-    if ($@) {
+    # Check if threads are available (on some non-threaded perls, e.g. 5.8,
+    # threads.pm loads fine but provides no create - verify the API exists)
+    my $hasThreads = eval { require threads; threads->can('create') ? 1 : 0 };
+    unless ($hasThreads) {
       # Fallback to synchronous execution if threads not available
       warn "Threads not available, executing synchronously";
       eval {
