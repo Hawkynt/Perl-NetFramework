@@ -390,7 +390,6 @@ package System::String; {
     print "Line #".__LINE__." fails\n" unless(Format("{0,-4}",$a) eq "abc ");
     print "Line #".__LINE__." fails\n" unless(Format("{0,4}",$a) eq " abc");
     print "All tests done.\n";
-    <STDIN>;
   }
   #endregion
 
