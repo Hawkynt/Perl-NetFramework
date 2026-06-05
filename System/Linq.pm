@@ -198,11 +198,28 @@ package System::Collections::IEnumerable; {
     return(new System::Linq::GroupByCollection($this,$selector));
   }
     
-  sub OrderByDescending($$){
+  sub OrderByDescending($;&){
     my($this,$predicate)=@_;
     throw(System::NullReferenceException->new()) unless (defined($this));
     require System::Linq::OrderByIterator;
     return(new System::Linq::OrderByCollection($this,1,$predicate));
+  }
+
+  # ThenBy/ThenByDescending are only valid on an ordered enumerable produced by
+  # OrderBy/OrderByDescending (see System::Linq::OrderByCollection). In .NET they
+  # are not even visible on a plain IEnumerable; here we provide them on the
+  # IEnumerable surface so that an erroneous call fails with a descriptive
+  # InvalidOperationException instead of a bare "method not found".
+  sub ThenBy($;&){
+    my($this,$predicate)=@_;
+    throw(System::NullReferenceException->new()) unless (defined($this));
+    throw(System::InvalidOperationException->new('ThenBy','ThenBy can only be used on an ordered sequence produced by OrderBy or OrderByDescending'));
+  }
+
+  sub ThenByDescending($;&){
+    my($this,$predicate)=@_;
+    throw(System::NullReferenceException->new()) unless (defined($this));
+    throw(System::InvalidOperationException->new('ThenByDescending','ThenByDescending can only be used on an ordered sequence produced by OrderBy or OrderByDescending'));
   }
     
   sub SelectMany($;$){
