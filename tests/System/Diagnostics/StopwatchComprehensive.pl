@@ -27,7 +27,7 @@ sub test_platform_detection {
     diag("Running comprehensive Stopwatch tests on:");
     diag("  OS: $^O");
     diag("  Perl: $]");
-    diag("  Architecture: " . ($Config{archname} // 'unknown'));
+    diag("  Architecture: " . (defined($Config{archname}) ? $Config{archname} : ('unknown')));
     diag("  High-resolution timer: " . (System::Diagnostics::Stopwatch::IsHighResolution() ? 'Available' : 'Unavailable'));
     diag("  Timer frequency: " . System::Diagnostics::Stopwatch::Frequency() . " ticks/sec");
     

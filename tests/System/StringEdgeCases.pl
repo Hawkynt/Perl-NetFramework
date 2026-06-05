@@ -4,6 +4,10 @@ use warnings;
 use utf8;
 use lib '../../';
 use Test::More;
+BEGIN {
+    # 5.8's Unicode case-mapping machinery is too weak for these edge cases
+    plan skip_all => 'Unicode string edge cases require Perl 5.10+ semantics' if $] < 5.010;
+}
 use System;
 use System::String;
 use System::Object;

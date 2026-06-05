@@ -106,7 +106,8 @@ print "   ⚡ Simple but inflexible and obsolete, event-driven completion\n\n";
     eval {
       my $result = $args->Result();
       print "   📖 Downloaded: '$result'\n";
-      print "   🏷️  UserState: " . ($args->UserState() // 'none') . "\n";
+      my $userState = $args->UserState();
+      print "   🏷️  UserState: " . (defined($userState) ? $userState : 'none') . "\n";
     };
     if ($@) {
       print "   ❌ Error: $@\n";

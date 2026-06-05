@@ -92,8 +92,8 @@ sub test_mock_implementation {
         my ($class, %params) = @_;
         return bless {
             _async_state => $params{async_state},
-            _is_completed => $params{is_completed} // 0,
-            _completed_synchronously => $params{completed_synchronously} // 0,
+            _is_completed => defined($params{is_completed}) ? $params{is_completed} : (0),
+            _completed_synchronously => defined($params{completed_synchronously}) ? $params{completed_synchronously} : (0),
             _wait_handle => $params{wait_handle}
         }, $class;
     }

@@ -31,8 +31,8 @@ BEGIN {
     use_ok('System::TimeSpan');
 }
 
-# Performance monitoring utilities
-package PerformanceMonitor {
+# Performance monitoring utilities (block form keeps perl 5.8 compatibility)
+{ package PerformanceMonitor;
     sub new {
         my ($class) = @_;
         return bless {
@@ -148,7 +148,8 @@ package PerformanceMonitor {
         Test::More::diag(sprintf("Peak memory: %.2f MB", $stats->{peak_memory} / 1048576));
         Test::More::diag(sprintf("Current memory: %.2f MB", $stats->{current_memory} / 1048576));
     }
-};
+}
+package main;
 
 # List::Util fallback for older Perl versions
 BEGIN {
