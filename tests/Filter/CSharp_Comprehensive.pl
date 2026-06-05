@@ -7,7 +7,7 @@ use warnings;
 use Test::More;
 use File::Temp qw(tempfile);
 
-plan tests => 15;
+plan tests => 14;
 
 # Test that Filter::CSharp loads
 use_ok('Filter::CSharp') or BAIL_OUT("Cannot load Filter::CSharp");
