@@ -2,9 +2,12 @@ name: CI
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [main]
   pull_request:
-    branches: [ main ]
+    branches: [main]
+  # release.yml calls this via `uses: ./.github/workflows/ci.yml`
+  # so releases run the exact same matrix as per-PR CI.
+  workflow_call: {}
 
 # Force JavaScript-based actions to run on Node 24 instead of the deprecated Node 20 ahead of
 # the 2026-06-16 hard cutover, until we bump each action to a Node-24-native major version.
@@ -13,17 +16,20 @@ env:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    name: Perl ${{ matrix.perl-version }} on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
     timeout-minutes: 30
     strategy:
+      fail-fast: false
       matrix:
+        os: [ubuntu-latest, windows-latest]
         perl-version: ['5.30', '5.32', '5.34', '5.36']
-    
-    name: Perl ${{ matrix.perl-version }}
-    
+
     steps:
     - uses: actions/checkout@v4
-    
+      with:
+        fetch-depth: 0                          # version.pl needs full history
+
     - name: Setup Perl
       uses: shogo82148/actions-setup-perl@v1
       with:
@@ -32,89 +38,64 @@ jobs:
         install-modules: |
           Test::More
           Term::ANSIColor
-          Scalar::Util
-          File::Find
-          File::Spec
-          Getopt::Long
-    
-    - name: Install optional dependencies
+
+    - name: Install optional dependencies (advisory)
+      shell: bash
       run: |
         cpanm --notest Tk || echo "Tk installation failed, skipping GUI tests"
         cpanm --notest Image::Xbm || echo "Image::Xbm installation failed, continuing"
-    
-    - name: Run syntax check on core modules
+
+    # REQUIRED tier: the core modules must compile.
+    - name: Build (syntax check core modules)
+      shell: bash
       run: |
-        echo "Checking CSharp.pm..."
-        perl -I. -c CSharp.pm || echo "CSharp.pm syntax check failed"
-        
-        echo "Checking Filter/CSharp.pm..."
-        perl -I. -c Filter/CSharp.pm || echo "Filter/CSharp.pm syntax check failed"
-        
-        echo "Checking System.pm..."
-        perl -I. -c System.pm || echo "System.pm syntax check failed"
-        
-        echo "All syntax checks completed"
-    
-    - name: Run individual test files
+        perl -I. -c CSharp.pm
+        perl -I. -c Filter/CSharp.pm
+        perl -I. -c System.pm
+
+    # REQUIRED tier: the C# filter is the heart of this repo - its tests must pass.
+    # ! CSharp_Constructor.pl stays advisory until its two filter bugs are fixed
+    #   (field-init accessor + multi-class namespace parsing).
+    - name: Test (core)
+      shell: bash
+      run: |
+        perl -I. tests/System/Types.pl
+        perl -I. tests/Filter/CSharp_Working.pl
+        perl -I. tests/Filter/CSharp_Foreach.pl
+        perl -I. tests/Filter/CSharp_Comprehensive.pl
+        perl -I. tests/Filter/CSharp_LineNumbers.pl
+
+    # ADVISORY tier: full per-file suite. Known-red files exist (tracked backlog),
+    # so a failure here never blocks a merge - but hangs do fail it fast.
+    - name: Test (full suite, advisory)
+      continue-on-error: true
+      shell: bash
       run: |
         cd tests
-        echo "Running individual test files..."
-        for test_file in System/*.pl System/*/*.pl; do
+        FAILED=0
+        for test_file in System/*.pl System/*/*.pl Filter/*.pl; do
           if [ -f "$test_file" ]; then
             echo "Running: $test_file"
-            timeout 120 perl -I.. "$test_file" 2>&1 || echo "Test $test_file failed, timed out or had issues"
+            timeout 120 perl -I.. "$test_file" 2>&1 || { echo "::warning::$test_file failed, timed out or had issues"; FAILED=$((FAILED+1)); }
           fi
         done
-        echo "Individual test run completed"
-    
-    - name: Run System Framework tests
-      run: |
-        echo "Running System Framework tests..."
-        perl -I. tests/System/Types.pl || echo "System Types tests had issues"
-        perl -I. tests/System/Text/RegularExpressions.pl || echo "RegEx tests had issues"
-    
-    - name: Run C# Filter tests
-      run: |
-        echo "Running C# Filter tests..."
-        perl -I. tests/Filter/CSharp_Working.pl || echo "Basic C# Filter tests had issues"
-        perl -I. tests/Filter/CSharp_Constructor.pl || echo "C# Constructor tests had issues"
-        perl -I. tests/Filter/CSharp_Foreach.pl || echo "C# Foreach tests had issues"
-        perl -I. tests/Filter/CSharp_Comprehensive.pl || echo "C# Comprehensive syntax tests had issues"
-        perl -I. tests/Filter/CSharp_LineNumbers.pl || echo "C# Line number tests had issues"
-    
-    - name: Run test suite
-      run: |
-        timeout 1200 perl tests/TestRunner.pl || echo "Some tests failed, timed out or had issues"
-    
-    - name: Test embedded test methods
-      run: |
-        perl -I. -e "
-          eval 'use System::String'; 
-          if (\$@) { 
-            print \"Could not load System::String: \$@\"; 
-            exit 0; 
-          } 
-          if (System::String->can('Test')) { 
-            eval { System::String->Test(); }; 
-            if (\$@) { 
-              print \"Embedded String test failed: \$@\"; 
-              exit 1; 
-            } else { 
-              print \"Embedded String tests passed\"; 
-            } 
-          } else { 
-            print \"No embedded String tests found\"; 
-          }
-        " || echo "Embedded test check failed"
+        echo "Files with issues: $FAILED"
+        exit $([ "$FAILED" -eq 0 ] && echo 0 || echo 1)
+
+    # ADVISORY tier: test-methodology runner (compilation + coverage report).
+    - name: Test (methodology runner, advisory)
+      continue-on-error: true
+      shell: bash
+      run: timeout 1200 perl tests/TestRunner.pl
 
   lint:
+    name: Perl Lint
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    name: Perl Lint
-    
+
     steps:
     - uses: actions/checkout@v4
-    
+
     - name: Setup Perl
       uses: shogo82148/actions-setup-perl@v1
       with:
@@ -123,12 +104,14 @@ jobs:
         install-modules: |
           Perl::Critic
           Perl::Tidy
-    
-    - name: Run Perl::Critic
+
+    - name: Run Perl::Critic (advisory)
+      continue-on-error: true
       run: |
         find . -name "*.pm" -not -path "./tests/*" | xargs perlcritic --severity 4 --verbose 1 || echo "Perl::Critic warnings found"
-    
-    - name: Check Perl syntax
+
+    - name: Check Perl syntax (advisory)
+      continue-on-error: true
       run: |
         echo "Running comprehensive syntax check..."
         find . -name "*.pm" -not -path "./tests/*" | while read -r file; do
