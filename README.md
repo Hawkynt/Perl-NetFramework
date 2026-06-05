@@ -13,9 +13,7 @@
 ![Code Size](https://img.shields.io/github/languages/code-size/Hawkynt/Perl-NetFramework?color=4CAF50)
 ![Repo Size](https://img.shields.io/github/repo-size/Hawkynt/Perl-NetFramework?color=FF9800)
 
-> 🚀 A comprehensive clone of the .NET Framework Base Class Library (BCL) implemented in pure Perl.
-
-## 📖 Overview
+> A comprehensive clone of the .NET Framework Base Class Library (BCL) implemented in pure Perl.
 
 Perl-NetFramework brings the familiar .NET programming model to Perl, providing a rich set of classes, interfaces, and language constructs that mirror the .NET Framework's Base Class Library. This project enables developers to write Perl code using .NET-style patterns, object-oriented design, and familiar APIs.
 
@@ -246,7 +244,7 @@ Perl-NetFramework/
         └── Trace.pm            
 ```
 
-## 💡 Usage Examples
+## 🚀 Usage Examples
 
 ### 🎭 C# Syntax Transformation (Filter::CSharp)
 
@@ -971,7 +969,7 @@ if ($@ && ref($@) && $@->isa('System::Exception')) {
 
 `use Filter::CSharp;` transforms only the file that uses it. Plain Perl files (including other modules in your project) are never affected. ✅
 
-## 🔧 Development and Testing
+## 🛠️ Development and Testing
 
 ### 🧪 Running the Test Suite
 
@@ -1268,6 +1266,13 @@ For maintainers, releases are fully automated and triggered by successful CI run
 - GitHub Actions UI: Trigger release workflow manually with custom version
 - Force release even if some tests fail (for emergency releases)
 
-## 📄 License
+## ❤️ Support
 
-This project is licensed under the GNU Lesser General Public License v3.0 or later. See the LICENSE file for details.
+If this project saves you time or money, consider supporting its development:
+
+[![GitHub Sponsors](https://img.shields.io/badge/GitHub-Sponsor-EA4AAA?logo=githubsponsors)](https://github.com/sponsors/Hawkynt)
+[![PayPal](https://img.shields.io/badge/PayPal-Donate-00457C?logo=paypal)](https://www.paypal.me/hawkynt)
+
+## 📜 License
+
+Licensed under LGPL-3.0-or-later — see [LICENSE](LICENSE).
