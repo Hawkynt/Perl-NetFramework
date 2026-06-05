@@ -34,9 +34,10 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-    # Only run if tests passed OR manual trigger
+    # Releases are created manually via workflow_dispatch only. To re-enable automatic
+    # releases on green CI, add back:
+    #   (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success') ||
     if: >
-      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success') ||
       (github.event_name == 'workflow_dispatch')
       
     steps:
@@ -255,7 +256,7 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         
     - name: Upload distribution artifacts
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: perl-netframework-${{ steps.get_version.outputs.version_number }}
         path: |
