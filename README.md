@@ -931,6 +931,46 @@ perl run_all_tests.pl
 
 Visit my [**Releases Page**](https://github.com/Hawkynt/Perl-NetFramework/releases) for all download options.
 
+## Perl Interoperability Notes
+
+When mixing this framework with plain Perl code or CPAN modules, keep these verified behaviors in mind. 🧩
+
+### 🏷️ Global short-name aliases
+
+Loading any `System::*` module creates global aliases for short package names (`String::`, `string::`, `Math::`, `Array::`, `Object::`, `List::`, `Dictionary::`, ...) via `CSharp::_ShortenPackageName`. If your own code or a CPAN dependency defines packages with those names, they will be clobbered (the alias is a typeglob copy). ⚠️ Treat those short names as reserved, or reference framework classes only via full `System::*` names in mixed codebases.
+
+### ➕ System::String operator semantics are C#-like, not Perl-like
+
+For `System::String`, `+` **concatenates** (it does not add), while `==`, `eq`, and `cmp` all perform **value** comparison. In numeric context the object stringifies first, so numeric-looking strings behave like Perl strings (including surprising leading-zero cases). 💡 Use `->ToString` and explicit conversions at the boundary to plain-Perl code.
+
+```perl
+my $s = System::String->new("2");
+print $s + 3;            # "23"  (concatenation, not 5)
+print($s eq "2" ? 1 : 0); # 1   (value equality)
+my $z = System::String->new("007");
+print $z->ToString();    # "007" stays "007", not 7
+```
+
+### 📦 CSharp.pm exports
+
+`use CSharp;` exports `true`, `false`, `null`, `throw`, `try`, `catch`, `finally`, `switch`, `case`, and `default` into the calling package. This collides with Perl 5.34+ `use feature 'try'` and with `Try::Tiny` in the same file. 🚫 Don't mix them within one file.
+
+### 🎯 Exceptions are die()-objects and play well with plain eval
+
+Framework exceptions are thrown via `die` with a blessed object, so they work with a plain `eval` block. They stringify to `"Type: message + stack trace"`. Framework objects compare by **reference** with `==`/`eq` (.NET semantics) — the only exception is `System::String`, which compares by value.
+
+```perl
+eval { some_framework_call(); };
+if ($@ && ref($@) && $@->isa('System::Exception')) {
+    print "Caught: " . $@->Message . "\n";
+    print "$@";   # stringifies to "Type: message + stack trace"
+}
+```
+
+### 🔎 Source filter scope
+
+`use Filter::CSharp;` transforms only the file that uses it. Plain Perl files (including other modules in your project) are never affected. ✅
+
 ## 🔧 Development and Testing
 
 ### 🧪 Running the Test Suite
