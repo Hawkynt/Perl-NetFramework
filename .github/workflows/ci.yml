@@ -22,8 +22,17 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest]
-        perl-version: ['5.30', '5.32', '5.34', '5.36']
+        # explicit rows because the platforms have different floors:
+        # Linux builds reach back to 5.8, Strawberry on Windows starts at 5.14
+        include:
+          - { os: ubuntu-latest,  perl-version: '5.8'  }   # minimum supported version
+          - { os: ubuntu-latest,  perl-version: '5.10' }
+          - { os: ubuntu-latest,  perl-version: '5.14' }
+          - { os: ubuntu-latest,  perl-version: '5.22' }
+          - { os: ubuntu-latest,  perl-version: '5.30' }
+          - { os: ubuntu-latest,  perl-version: '5.36' }
+          - { os: windows-latest, perl-version: '5.14' }   # Strawberry floor
+          - { os: windows-latest, perl-version: '5.36' }
 
     steps:
     - uses: actions/checkout@v4
