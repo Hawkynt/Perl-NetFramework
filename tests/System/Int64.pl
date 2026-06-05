@@ -6,6 +6,7 @@ use lib '.';
 
 # Import required modules
 use System::Int64;
+use System::Int32;
 use System::Exceptions;
 
 # Test constants
