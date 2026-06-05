@@ -122,19 +122,19 @@ test_ok($writeOutput eq 'Hello', 'Write outputs correct text');
 my $writeLineOutput = capture_output(sub {
   System::Console->WriteLine('World');
 });
-test_ok($writeLineOutput =~ /World/, 'WriteLine outputs text');
-test_ok($writeLineOutput =~ /\n|\r\n$/, 'WriteLine adds newline');
+test_ok(scalar($writeLineOutput =~ /World/), 'WriteLine outputs text');
+test_ok(scalar($writeLineOutput =~ /\n|\r\n$/), 'WriteLine adds newline');
 
 my $emptyLineOutput = capture_output(sub {
   System::Console->WriteLine();
 });
-test_ok($emptyLineOutput =~ /^\n|\r\n$/, 'WriteLine() outputs just newline');
+test_ok(scalar($emptyLineOutput =~ /^\n|\r\n$/), 'WriteLine() outputs just newline');
 
 # Test formatted output
 my $formattedOutput = capture_output(sub {
   System::Console->Write('Number: {0}', 42);
 });
-test_ok($formattedOutput =~ /42/, 'Write with formatting works');
+test_ok(scalar($formattedOutput =~ /42/), 'Write with formatting works');
 
 # Test 21-25: Cursor properties and methods
 my $cursorLeft = System::Console->CursorLeft();

@@ -235,7 +235,7 @@ package System::Console; {
     
     # Format string with parameters
     my $format = shift @args;
-    my $formatted = System::String->Format($format, @args);
+    my $formatted = System::String::Format($format, @args);
     print $formatted;
   }
 
@@ -270,7 +270,7 @@ package System::Console; {
     
     # Format string with parameters
     my $format = shift @args;
-    my $formatted = System::String->Format($format, @args);
+    my $formatted = System::String::Format($format, @args);
     print STDERR $formatted;
   }
   
