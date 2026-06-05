@@ -24,7 +24,7 @@ package System::Text::RegularExpressions::Regex; {
     
     my $this = bless {
       _pattern => $pattern,
-      _options => $options // 0,
+      _options => defined($options) ? $options : (0),
       _compiled => undef,
     }, ref($class) || $class || __PACKAGE__;
     
@@ -90,7 +90,7 @@ package System::Text::RegularExpressions::Regex; {
     my $inputStr = ref($input) && $input->can('ToString') ? $input->ToString() : "$input";
     my $patternStr = ref($pattern) && $pattern->can('ToString') ? $pattern->ToString() : "$pattern";
     
-    $startIndex //= 0;
+    $startIndex = 0 unless defined($startIndex);
     my $start = ref($startIndex) ? $startIndex->Value() : $startIndex;
     
     # Extract substring from start index
@@ -237,12 +237,12 @@ package System::Text::RegularExpressions::Match; {
     my ($class, $value, $index, $length, $success, $input, $pattern) = @_;
     
     return bless {
-      _value => $value // "",
-      _index => $index // -1,
-      _length => $length // 0,
-      _success => $success // false,
-      _input => $input // "",
-      _pattern => $pattern // "",
+      _value => defined($value) ? $value : (""),
+      _index => defined($index) ? $index : (-1),
+      _length => defined($length) ? $length : (0),
+      _success => defined($success) ? $success : (false),
+      _input => defined($input) ? $input : (""),
+      _pattern => defined($pattern) ? $pattern : (""),
       _groups => undef,
     }, ref($class) || $class || __PACKAGE__;
   }
@@ -302,10 +302,10 @@ package System::Text::RegularExpressions::Group; {
     my ($class, $value, $index, $length, $success) = @_;
     
     return bless {
-      _value => $value // "",
-      _index => $index // -1,
-      _length => $length // 0,
-      _success => $success // false,
+      _value => defined($value) ? $value : (""),
+      _index => defined($index) ? $index : (-1),
+      _length => defined($length) ? $length : (0),
+      _success => defined($success) ? $success : (false),
     }, ref($class) || $class || __PACKAGE__;
   }
   
@@ -349,7 +349,7 @@ package System::Text::RegularExpressions::MatchCollection; {
     my ($class, $matches) = @_;
     
     return bless {
-      _matches => $matches // [],
+      _matches => defined($matches) ? $matches : ([]),
     }, ref($class) || $class || __PACKAGE__;
   }
   
@@ -386,7 +386,7 @@ package System::Text::RegularExpressions::GroupCollection; {
     my ($class, $groups) = @_;
     
     return bless {
-      _groups => $groups // [],
+      _groups => defined($groups) ? $groups : ([]),
       _groupsByName => {},
     }, ref($class) || $class || __PACKAGE__;
   }
@@ -409,8 +409,9 @@ package System::Text::RegularExpressions::GroupCollection; {
       return $this->{_groups}->[$idx];
     } else {
       # Named index
-      return $this->{_groupsByName}->{$index} // 
-        System::Text::RegularExpressions::Group->new("", -1, 0, false);
+      return defined($this->{_groupsByName}->{$index})
+        ? $this->{_groupsByName}->{$index}
+        : System::Text::RegularExpressions::Group->new("", -1, 0, false);
     }
   }
   

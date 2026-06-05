@@ -99,7 +99,7 @@ package System::IO::TextReader; {
   # Static null reader
   my $_nullReader;
   sub Null {
-    $_nullReader //= System::IO::TextReader::NullTextReader->new();
+    $_nullReader = System::IO::TextReader::NullTextReader->new() unless defined($_nullReader);
     return $_nullReader;
   }
   

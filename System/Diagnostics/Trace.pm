@@ -15,14 +15,14 @@ package System::Diagnostics::Trace; {
   sub WriteLine {
     my $class = shift if @_ && !ref($_[0]) && $_[0] =~ /::Trace$/;
     my ($text) = @_;
-    $text //= '';
+    $text = '' unless defined($text);
     _WriteToListeners($text . "\n") if DEBUG;
   }
   
   sub Write {
     my $class = shift if @_ && !ref($_[0]) && $_[0] =~ /::Trace$/;
     my ($text) = @_;
-    $text //= '';
+    $text = '' unless defined($text);
     _WriteToListeners($text) if DEBUG;
   }
   
@@ -62,7 +62,7 @@ package System::Diagnostics::Trace; {
     my $class = shift if @_ && !ref($_[0]) && $_[0] =~ /::Trace$/;
     my ($condition, $message) = @_;
     unless ($condition) {
-      $message //= 'Assertion failed';
+      $message = 'Assertion failed' unless defined($message);
       WriteLine("ASSERTION FAILED: $message");
       # In .NET this would show a dialog, but we'll just write to trace
     }

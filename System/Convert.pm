@@ -329,8 +329,8 @@ package System::Convert; {
     my ($class, $inArray, $offset, $length) = @_;
     throw(System::ArgumentNullException->new('inArray')) unless defined($inArray);
     
-    $offset //= 0;
-    $length //= @$inArray - $offset if ref($inArray) eq 'ARRAY';
+    $offset = 0 unless defined($offset);
+    $length = defined($length) ? $length : (@$inArray - $offset) if ref($inArray) eq 'ARRAY';
     
     throw(System::ArgumentOutOfRangeException->new('offset')) if $offset < 0;
     throw(System::ArgumentOutOfRangeException->new('length')) if $length < 0;

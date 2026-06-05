@@ -32,7 +32,7 @@ package System::IO::StreamWriter; {
     throw(System::ArgumentException->new('Stream must support writing')) unless $this->{_stream}->CanWrite();
     
     # Set up encoding (simplified - just UTF-8 for now)
-    $this->{_encoding} = $encoding // 'utf8';
+    $this->{_encoding} = defined($encoding) ? $encoding : ('utf8');
     $this->{_autoFlush} = false;
     
     return $this;
@@ -124,8 +124,8 @@ package System::IO::StreamWriter; {
     throw(System::ObjectDisposedException->new('StreamWriter')) if $this->{_disposed};
     throw(System::ArgumentNullException->new('chars')) unless defined($chars);
     
-    $index //= 0;
-    $count //= @$chars - $index;
+    $index = 0 unless defined($index);
+    $count = @$chars - $index unless defined($count);
     
     throw(System::ArgumentOutOfRangeException->new('index')) if $index < 0;
     throw(System::ArgumentOutOfRangeException->new('count')) if $count < 0;

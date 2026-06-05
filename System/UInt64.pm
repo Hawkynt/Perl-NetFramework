@@ -16,7 +16,7 @@ package System::UInt64; {
   
   sub new {
     my ($class, $value) = @_;
-    $value //= 0;
+    $value = 0 unless defined($value);
     
     # Convert to BigInt for range checking
     my $bigValue = Math::BigInt->new($value);
@@ -84,15 +84,15 @@ package System::UInt64; {
       $hexStr =~ s/^0x//;
       return $format eq 'X' ? uc($hexStr) : lc($hexStr);
     } elsif ($format =~ /^D(\d+)?$/) {
-      my $width = $1 // 1;
+      my $width = defined($1) ? $1 : (1);
       return sprintf("%0${width}s", $value->bstr());
     } elsif ($format =~ /^X(\d+)?$/) {
-      my $width = $1 // 16;
+      my $width = defined($1) ? $1 : (16);
       my $hexStr = $value->as_hex();
       $hexStr =~ s/^0x//;
       return sprintf("%0${width}s", uc($hexStr));
     } elsif ($format =~ /^x(\d+)?$/) {
-      my $width = $1 // 16;
+      my $width = defined($1) ? $1 : (16);
       my $hexStr = $value->as_hex();
       $hexStr =~ s/^0x//;
       return sprintf("%0${width}s", lc($hexStr));
@@ -120,7 +120,8 @@ package System::UInt64; {
     return false unless defined($other);
     return false unless $other->isa('System::UInt64');
     
-    return $this->{_value}->beq($other->{_value});
+    # bcmp instead of beq because perl 5.8's bundled Math::BigInt lacks beq
+    return $this->{_value}->bcmp($other->{_value}) == 0 ? true : false;
   }
   
   sub GetHashCode {

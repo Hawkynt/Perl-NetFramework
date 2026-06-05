@@ -9,7 +9,7 @@ package System::Diagnostics::TraceListener; {
     my $class = shift;
     my ($name) = @_;
     return bless {
-      name => $name // 'TraceListener',
+      name => defined($name) ? $name : ('TraceListener'),
       indent_level => 0,
       indent_size => 4,
       need_indent => 1
@@ -25,7 +25,7 @@ package System::Diagnostics::TraceListener; {
   
   sub WriteLine {
     my ($this, $message) = @_;
-    $this->Write(($message // '') . "\n");
+    $this->Write((defined($message) ? $message : ('')) . "\n");
   }
   
   sub Flush {
@@ -102,7 +102,7 @@ package System::Diagnostics::TextWriterTraceListener; {
     my $class = shift;
     my ($stream_or_filename, $name) = @_;
     
-    my $this = System::Diagnostics::TraceListener::new($class, $name // 'TextWriterTraceListener');
+    my $this = System::Diagnostics::TraceListener::new($class, defined($name) ? $name : ('TextWriterTraceListener'));
     
     if (ref($stream_or_filename)) {
       # It's a file handle or stream object

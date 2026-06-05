@@ -13,7 +13,7 @@ package System::Collections::Generic::Dictionary; {
   # Generic Dictionary<TKey, TValue> implementation
   sub new {
     my ($class, $capacity) = @_;
-    $capacity //= 16; # Default capacity
+    $capacity = 16 unless defined($capacity); # Default capacity
     
     return bless {
       _buckets => {},

@@ -10,7 +10,7 @@ package System::Threading::ThreadStateException; {
   
   sub new {
     my ($class, $message, $innerException) = @_;
-    $message //= 'Thread was in an invalid state for the operation being executed.';
+    $message = 'Thread was in an invalid state for the operation being executed.' unless defined($message);
     
     return $class->SUPER::new($message, $innerException);
   }

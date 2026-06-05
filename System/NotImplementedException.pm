@@ -10,7 +10,7 @@ package System::NotImplementedException; {
   
   sub new {
     my ($class, $message, $innerException) = @_;
-    $message //= 'The method or operation is not implemented.';
+    $message = 'The method or operation is not implemented.' unless defined($message);
     
     return $class->SUPER::new($message, $innerException);
   }

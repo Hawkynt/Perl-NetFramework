@@ -170,8 +170,8 @@ package System::Collections::Generic::List; {
     my ($this, $item, $startIndex, $count) = @_;
     throw(System::NullReferenceException->new()) unless defined($this);
     
-    $startIndex //= 0;
-    $count //= $this->Count() - $startIndex;
+    $startIndex = 0 unless defined($startIndex);
+    $count = $this->Count() - $startIndex unless defined($count);
     
     if ($startIndex < 0 || $startIndex >= $this->Count()) {
       throw(System::ArgumentOutOfRangeException->new("startIndex was out of range"));
@@ -202,8 +202,8 @@ package System::Collections::Generic::List; {
       return -1;
     }
     
-    $startIndex //= $this->Count() - 1;
-    $count //= $startIndex + 1;
+    $startIndex = $this->Count() - 1 unless defined($startIndex);
+    $count = $startIndex + 1 unless defined($count);
     
     if ($startIndex < 0 || $startIndex >= $this->Count()) {
       throw(System::ArgumentOutOfRangeException->new("startIndex was out of range"));
@@ -331,8 +331,8 @@ package System::Collections::Generic::List; {
     throw(System::NullReferenceException->new()) unless defined($this);
     throw(System::ArgumentNullException->new('predicate')) unless defined($predicate);
     
-    $startIndex //= 0;
-    $count //= $this->Count() - $startIndex;
+    $startIndex = 0 unless defined($startIndex);
+    $count = $this->Count() - $startIndex unless defined($count);
     
     if ($startIndex < 0 || $startIndex >= $this->Count()) {
       throw(System::ArgumentOutOfRangeException->new("startIndex was out of range"));

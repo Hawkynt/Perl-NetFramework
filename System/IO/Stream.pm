@@ -129,7 +129,7 @@ package System::IO::Stream; {
     throw(System::NotSupportedException->new('Stream does not support reading')) unless $this->CanRead();
     throw(System::NotSupportedException->new('Destination stream does not support writing')) unless $destination->CanWrite();
     
-    $bufferSize //= 4096; # Default buffer size
+    $bufferSize = 4096 unless defined($bufferSize); # Default buffer size
     throw(System::ArgumentOutOfRangeException->new('bufferSize')) if $bufferSize <= 0;
     
     my @buffer = (0) x $bufferSize;

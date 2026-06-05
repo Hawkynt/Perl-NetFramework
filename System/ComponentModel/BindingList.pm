@@ -372,7 +372,7 @@ package System::ComponentModel::BindingList; {
     my ($this, $enable) = @_;
     throw(System::NullReferenceException->new()) unless defined($this);
     
-    $enable //= true;
+    $enable = true unless defined($enable);
     
     if ($this->{_supportsChangeNotification} ne $enable) {
       $this->{_supportsChangeNotification} = $enable ? true : false;

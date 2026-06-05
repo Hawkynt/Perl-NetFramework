@@ -15,8 +15,8 @@ package System::Threading::EventWaitHandle; {
   
   sub new {
     my ($class, $initialState, $mode, $name) = @_;
-    $initialState //= 0;
-    $mode //= AutoReset;
+    $initialState = 0 unless defined($initialState);
+    $mode = AutoReset unless defined($mode);
     
     my $this = bless {
       _initial_state => $initialState,

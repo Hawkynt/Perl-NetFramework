@@ -105,7 +105,7 @@ package System::IO::DirectoryInfo; {
     throw(System::NullReferenceException->new()) unless defined($this);
     throw(System::DirectoryNotFoundException->new($this->{_fullPath})) unless $this->Exists();
     
-    $recursive //= 0;
+    $recursive = 0 unless defined($recursive);
     
     if ($recursive) {
       $this->_DeleteRecursively($this->{_fullPath});
@@ -167,8 +167,8 @@ package System::IO::DirectoryInfo; {
     throw(System::NullReferenceException->new()) unless defined($this);
     throw(System::DirectoryNotFoundException->new($this->{_fullPath})) unless $this->Exists();
     
-    $searchPattern //= '*';
-    $searchOption //= 0; # TopDirectoryOnly
+    $searchPattern = '*' unless defined($searchPattern);
+    $searchOption = 0 unless defined($searchOption); # TopDirectoryOnly
     
     my @directories;
     my @queue = ($this->{_fullPath});
@@ -205,8 +205,8 @@ package System::IO::DirectoryInfo; {
     throw(System::NullReferenceException->new()) unless defined($this);
     throw(System::DirectoryNotFoundException->new($this->{_fullPath})) unless $this->Exists();
     
-    $searchPattern //= '*';
-    $searchOption //= 0; # TopDirectoryOnly
+    $searchPattern = '*' unless defined($searchPattern);
+    $searchOption = 0 unless defined($searchOption); # TopDirectoryOnly
     
     my @files;
     my @queue = ($this->{_fullPath});
@@ -240,8 +240,8 @@ package System::IO::DirectoryInfo; {
     throw(System::NullReferenceException->new()) unless defined($this);
     throw(System::DirectoryNotFoundException->new($this->{_fullPath})) unless $this->Exists();
     
-    $searchPattern //= '*';
-    $searchOption //= 0; # TopDirectoryOnly
+    $searchPattern = '*' unless defined($searchPattern);
+    $searchOption = 0 unless defined($searchOption); # TopDirectoryOnly
     
     my @items;
     my @queue = ($this->{_fullPath});

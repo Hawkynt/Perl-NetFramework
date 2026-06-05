@@ -20,9 +20,9 @@ package System::Collections::Specialized::NotifyCollectionChangedEventArgs; {
     my $this = $class->SUPER::new();
     $this->{_action} = $action;
     $this->{_newItems} = $changedItems;
-    $this->{_newStartingIndex} = $startingIndex // -1;
+    $this->{_newStartingIndex} = defined($startingIndex) ? $startingIndex : (-1);
     $this->{_oldItems} = $oldItems;
-    $this->{_oldStartingIndex} = $oldStartingIndex // -1;
+    $this->{_oldStartingIndex} = defined($oldStartingIndex) ? $oldStartingIndex : (-1);
     
     # Validate arguments based on action
     $this->_ValidateArguments();

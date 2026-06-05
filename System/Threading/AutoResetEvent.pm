@@ -12,7 +12,7 @@ package System::Threading::AutoResetEvent; {
   
   sub new {
     my ($class, $initialState) = @_;
-    $initialState //= 0;
+    $initialState = 0 unless defined($initialState);
     
     # Create shared data structures for thread safety
     my $lock : shared;
@@ -32,8 +32,8 @@ package System::Threading::AutoResetEvent; {
     my ($this, $millisecondsTimeout, $exitContext) = @_;
     throw(System::ObjectDisposedException->new('AutoResetEvent')) if $this->{_disposed};
     
-    $millisecondsTimeout //= -1;  # Infinite timeout by default
-    $exitContext //= 0;
+    $millisecondsTimeout = -1 unless defined($millisecondsTimeout);  # Infinite timeout by default
+    $exitContext = 0 unless defined($exitContext);
     
     my $start_time = time() * 1000;  # Convert to milliseconds
     

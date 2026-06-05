@@ -27,19 +27,19 @@ package System::Console; {
   # Input/Output stream properties
   sub In {
     my ($class) = @_;
-    $_in //= System::IO::TextReader->new(\*STDIN);
+    $_in = System::IO::TextReader->new(\*STDIN) unless defined($_in);
     return $_in;
   }
   
   sub Out {
     my ($class) = @_;
-    $_out //= System::IO::TextWriter->new(\*STDOUT);
+    $_out = System::IO::TextWriter->new(\*STDOUT) unless defined($_out);
     return $_out;
   }
   
   sub Error {
     my ($class) = @_;
-    $_error //= System::IO::TextWriter->new(\*STDERR);
+    $_error = System::IO::TextWriter->new(\*STDERR) unless defined($_error);
     return $_error;
   }
 
@@ -200,7 +200,7 @@ package System::Console; {
 
   sub ReadKey {
     my ($class, $intercept) = @_;
-    $intercept //= false;
+    $intercept = false unless defined($intercept);
     
     # Simplified implementation - would return ConsoleKeyInfo in full .NET
     my $char;
@@ -304,8 +304,8 @@ package System::Console; {
 
   sub Beep {
     my ($class, $frequency, $duration) = @_;
-    $frequency //= 800;   # Default frequency
-    $duration //= 200;    # Default duration in ms
+    $frequency = 800 unless defined($frequency);   # Default frequency
+    $duration = 200 unless defined($duration);    # Default duration in ms
     
     if ($^O =~ /win/i) {
       # Windows - would need Win32::Console::ANSI or similar

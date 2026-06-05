@@ -6,7 +6,11 @@ package System::Single; {
   use CSharp;
   require System::Exceptions;
   require System::ValueType;
-  use POSIX qw(isnan isinf);
+  use POSIX();
+
+  # POSIX exports isnan/isinf only on perl 5.22+, so use portable implementations
+  sub isnan($) { my($value)=@_; return $value != $value; }
+  sub isinf($) { my($value)=@_; return $value == 9**9**9 || $value == -(9**9**9); }
   
   # Single: 32-bit floating-point number
   use constant {
@@ -20,7 +24,7 @@ package System::Single; {
   
   sub new {
     my ($class, $value) = @_;
-    $value //= 0.0;
+    $value = 0.0 unless defined($value);
     
     return bless { _value => $value + 0.0 }, ref($class) || $class || __PACKAGE__;
   }
@@ -62,13 +66,13 @@ package System::Single; {
     return "$value" unless defined($format) && $format ne '' && $format ne 'G';
     
     if ($format =~ /^F(\d+)?$/) {
-      my $decimals = $1 // 2;
+      my $decimals = defined($1) ? $1 : (2);
       return sprintf("%.${decimals}f", $value);
     } elsif ($format =~ /^E(\d+)?$/) {
-      my $decimals = $1 // 6;
+      my $decimals = defined($1) ? $1 : (6);
       return sprintf("%.${decimals}E", $value);
     } elsif ($format =~ /^e(\d+)?$/) {
-      my $decimals = $1 // 6;
+      my $decimals = defined($1) ? $1 : (6);
       return sprintf("%.${decimals}e", $value);
     }
     

@@ -14,9 +14,9 @@ package System::Text::UTF32Encoding; {
     
     my $this = $class->SUPER::new(12000); # UTF-32 code page
     $this->{_isReadOnly} = true;
-    $this->{_bigEndian} = $bigEndian // false;
-    $this->{_byteOrderMark} = $byteOrderMark // false;
-    $this->{_throwOnInvalidCharacters} = $throwOnInvalidCharacters // false;
+    $this->{_bigEndian} = defined($bigEndian) ? $bigEndian : (false);
+    $this->{_byteOrderMark} = defined($byteOrderMark) ? $byteOrderMark : (false);
+    $this->{_throwOnInvalidCharacters} = defined($throwOnInvalidCharacters) ? $throwOnInvalidCharacters : (false);
     
     return $this;
   }
@@ -36,8 +36,8 @@ package System::Text::UTF32Encoding; {
     throw(System::NullReferenceException->new()) unless defined($this);
     throw(System::ArgumentNullException->new('chars')) unless defined($chars);
     
-    $index //= 0;
-    $count //= @$chars - $index;
+    $index = 0 unless defined($index);
+    $count = @$chars - $index unless defined($count);
     
     throw(System::ArgumentOutOfRangeException->new('index')) if $index < 0;
     throw(System::ArgumentOutOfRangeException->new('count')) if $count < 0;
@@ -53,9 +53,9 @@ package System::Text::UTF32Encoding; {
     throw(System::ArgumentNullException->new('chars')) unless defined($chars);
     throw(System::ArgumentNullException->new('bytes')) unless defined($bytes);
     
-    $charIndex //= 0;
-    $charCount //= @$chars - $charIndex;
-    $byteIndex //= 0;
+    $charIndex = 0 unless defined($charIndex);
+    $charCount = @$chars - $charIndex unless defined($charCount);
+    $byteIndex = 0 unless defined($byteIndex);
     
     throw(System::ArgumentOutOfRangeException->new('charIndex')) if $charIndex < 0;
     throw(System::ArgumentOutOfRangeException->new('charCount')) if $charCount < 0;
@@ -95,8 +95,8 @@ package System::Text::UTF32Encoding; {
     throw(System::NullReferenceException->new()) unless defined($this);
     throw(System::ArgumentNullException->new('bytes')) unless defined($bytes);
     
-    $index //= 0;
-    $count //= @$bytes - $index;
+    $index = 0 unless defined($index);
+    $count = @$bytes - $index unless defined($count);
     
     throw(System::ArgumentOutOfRangeException->new('index')) if $index < 0;
     throw(System::ArgumentOutOfRangeException->new('count')) if $count < 0;
@@ -120,9 +120,9 @@ package System::Text::UTF32Encoding; {
     throw(System::ArgumentNullException->new('bytes')) unless defined($bytes);
     throw(System::ArgumentNullException->new('chars')) unless defined($chars);
     
-    $byteIndex //= 0;
-    $byteCount //= @$bytes - $byteIndex;
-    $charIndex //= 0;
+    $byteIndex = 0 unless defined($byteIndex);
+    $byteCount = @$bytes - $byteIndex unless defined($byteCount);
+    $charIndex = 0 unless defined($charIndex);
     
     throw(System::ArgumentOutOfRangeException->new('byteIndex')) if $byteIndex < 0;
     throw(System::ArgumentOutOfRangeException->new('byteCount')) if $byteCount < 0;

@@ -18,7 +18,7 @@ package System::Globalization::CultureInfo; {
     my ($class, $name) = @_;
     
     # Default to invariant culture if no name provided
-    $name //= '';
+    $name = '' unless defined($name);
     
     throw(System::ArgumentException->new('name cannot be null'))
       unless defined($name);
@@ -93,7 +93,7 @@ package System::Globalization::CultureInfo; {
   # Static properties
   sub InvariantCulture {
     my ($class) = @_;
-    $_invariantCulture //= System::Globalization::CultureInfo->new('');
+    $_invariantCulture = System::Globalization::CultureInfo->new('') unless defined($_invariantCulture);
     return $_invariantCulture;
   }
   
@@ -110,7 +110,7 @@ package System::Globalization::CultureInfo; {
     }
     
     # Getter - return current culture or default to invariant
-    $_currentCulture //= System::Globalization::CultureInfo->InvariantCulture();
+    $_currentCulture = System::Globalization::CultureInfo->InvariantCulture() unless defined($_currentCulture);
     return $_currentCulture;
   }
   
@@ -127,7 +127,7 @@ package System::Globalization::CultureInfo; {
     }
     
     # Getter - return current UI culture or default to current culture
-    $_currentUICulture //= System::Globalization::CultureInfo->CurrentCulture();
+    $_currentUICulture = System::Globalization::CultureInfo->CurrentCulture() unless defined($_currentUICulture);
     return $_currentUICulture;
   }
   

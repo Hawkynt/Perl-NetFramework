@@ -15,7 +15,7 @@ package System::Int32; {
   
   sub new {
     my ($class, $value) = @_;
-    $value //= 0;
+    $value = 0 unless defined($value);
     
     # Validate range
     if ($value < -2147483648 || $value > 2147483647) {
@@ -63,7 +63,7 @@ package System::Int32; {
       # Parse(string, NumberStyles, IFormatProvider) overload
       require System::Globalization::NumberParser;
       
-      $provider //= System::Globalization::CultureInfo->CurrentCulture();
+      $provider = System::Globalization::CultureInfo->CurrentCulture() unless defined($provider);
       
       my $value = System::Globalization::NumberParser::ParseWithStyle(
         $s, $style, $provider, 'System::Int32'
@@ -100,22 +100,22 @@ package System::Int32; {
       my $val = $this->{_value} < 0 ? $this->{_value} + 4294967296 : $this->{_value};
       return sprintf($format eq 'X' ? '%08X' : '%08x', $val);
     } elsif ($format =~ /^D(\d+)?$/) {
-      my $width = $1 // 1;
+      my $width = defined($1) ? $1 : (1);
       return sprintf("%0${width}d", $this->{_value});
     } elsif ($format =~ /^X(\d+)?$/) {
-      my $width = $1 // 8;
+      my $width = defined($1) ? $1 : (8);
       my $val = $this->{_value} < 0 ? $this->{_value} + 4294967296 : $this->{_value};
       return sprintf("%0${width}X", $val);
     } elsif ($format =~ /^x(\d+)?$/) {
-      my $width = $1 // 8;
+      my $width = defined($1) ? $1 : (8);
       my $val = $this->{_value} < 0 ? $this->{_value} + 4294967296 : $this->{_value};
       return sprintf("%0${width}x", $val);
     } elsif ($format =~ /^N(\d+)?$/) {
-      my $decimals = $1 // 2;
+      my $decimals = defined($1) ? $1 : (2);
       my $formatted = reverse join(',', (reverse split //, sprintf("%.0f", $this->{_value})) =~ /.{1,3}/g);
       return $decimals > 0 ? "$formatted." . ('0' x $decimals) : $formatted;
     } elsif ($format =~ /^C(\d+)?$/) {
-      my $decimals = $1 // 2;
+      my $decimals = defined($1) ? $1 : (2);
       my $formatted = reverse join(',', (reverse split //, sprintf("%.0f", abs($this->{_value}))) =~ /.{1,3}/g);
       my $currency = $decimals > 0 ? "\$${formatted}." . ('0' x $decimals) : "\$${formatted}";
       return $this->{_value} < 0 ? "($currency)" : $currency;

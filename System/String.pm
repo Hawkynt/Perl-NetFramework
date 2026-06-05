@@ -199,7 +199,7 @@ package System::String; {
     my ($this, $totalWidth, $paddingChar) = @_;
     throw(System::NullReferenceException->new()) unless defined($this);
     
-    $paddingChar //= ' ';
+    $paddingChar = ' ' unless defined($paddingChar);
     $paddingChar = substr($paddingChar, 0, 1) if length($paddingChar) > 1;
     
     my $data = $this->{_data} || '';
@@ -216,7 +216,7 @@ package System::String; {
     my ($this, $totalWidth, $paddingChar) = @_;
     throw(System::NullReferenceException->new()) unless defined($this);
     
-    $paddingChar //= ' ';
+    $paddingChar = ' ' unless defined($paddingChar);
     $paddingChar = substr($paddingChar, 0, 1) if length($paddingChar) > 1;
     
     my $data = $this->{_data} || '';

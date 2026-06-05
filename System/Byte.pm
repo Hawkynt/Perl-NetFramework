@@ -15,7 +15,7 @@ package System::Byte; {
   
   sub new {
     my ($class, $value) = @_;
-    $value //= 0;
+    $value = 0 unless defined($value);
     
     # Validate range
     if ($value < 0 || $value > 255) {
@@ -79,13 +79,13 @@ package System::Byte; {
     } elsif ($format eq 'X' || $format eq 'x') {
       return sprintf($format eq 'X' ? '%02X' : '%02x', $this->{_value});
     } elsif ($format =~ /^D(\d+)?$/) {
-      my $width = $1 // 1;
+      my $width = defined($1) ? $1 : (1);
       return sprintf("%0${width}d", $this->{_value});
     } elsif ($format =~ /^X(\d+)?$/) {
-      my $width = $1 // 2;
+      my $width = defined($1) ? $1 : (2);
       return sprintf("%0${width}X", $this->{_value});
     } elsif ($format =~ /^x(\d+)?$/) {
-      my $width = $1 // 2;
+      my $width = defined($1) ? $1 : (2);
       return sprintf("%0${width}x", $this->{_value});
     } else {
       throw(System::FormatException->new("Format string '$format' is not supported"));

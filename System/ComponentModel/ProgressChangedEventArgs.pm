@@ -14,7 +14,7 @@ package System::ComponentModel::ProgressChangedEventArgs; {
       if defined($progressPercentage) && ($progressPercentage < 0 || $progressPercentage > 100);
     
     return bless {
-      _progressPercentage => $progressPercentage // 0,
+      _progressPercentage => defined($progressPercentage) ? $progressPercentage : (0),
       _userState => $userState,
     }, ref($class) || $class || __PACKAGE__;
   }

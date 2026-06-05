@@ -11,9 +11,9 @@ package System::Diagnostics::PerformanceCounter; {
     my ($category, $counter, $instance) = @_;
     
     return bless {
-      category => $category // 'Custom',
-      counter => $counter // 'Counter',
-      instance => $instance // '',
+      category => defined($category) ? $category : ('Custom'),
+      counter => defined($counter) ? $counter : ('Counter'),
+      instance => defined($instance) ? $instance : (''),
       _value => 0,
       _last_sample_time => time(),
       _samples => [],
@@ -65,7 +65,7 @@ package System::Diagnostics::PerformanceCounter; {
   
   sub Increment {
     my ($this, $by) = @_;
-    $by //= 1;
+    $by = 1 unless defined($by);
     $this->{_value} += $by;
     $this->_AddSample($this->{_value});
     return $this->{_value};
@@ -73,7 +73,7 @@ package System::Diagnostics::PerformanceCounter; {
   
   sub Decrement {
     my ($this, $by) = @_;
-    $by //= 1;
+    $by = 1 unless defined($by);
     $this->{_value} -= $by;
     $this->_AddSample($this->{_value});
     return $this->{_value};

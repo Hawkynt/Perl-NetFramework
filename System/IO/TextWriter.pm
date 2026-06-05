@@ -23,7 +23,7 @@ package System::IO::TextWriter; {
     
     if (@_ >= 2) {
       # Setter
-      $this->{_newLine} = $value // "\n";
+      $this->{_newLine} = defined($value) ? $value : ("\n");
       return $value;
     } else {
       # Getter
@@ -106,8 +106,8 @@ package System::IO::TextWriter; {
     throw(System::ObjectDisposedException->new('TextWriter')) if $this->{_disposed};
     throw(System::ArgumentNullException->new('chars')) unless defined($chars);
     
-    $index //= 0;
-    $count //= @$chars - $index;
+    $index = 0 unless defined($index);
+    $count = @$chars - $index unless defined($count);
     
     throw(System::ArgumentOutOfRangeException->new('index')) if $index < 0;
     throw(System::ArgumentOutOfRangeException->new('count')) if $count < 0;
@@ -133,7 +133,7 @@ package System::IO::TextWriter; {
   # Static null writer
   my $_nullWriter;
   sub Null {
-    $_nullWriter //= System::IO::TextWriter::NullTextWriter->new();
+    $_nullWriter = System::IO::TextWriter::NullTextWriter->new() unless defined($_nullWriter);
     return $_nullWriter;
   }
   

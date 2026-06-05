@@ -11,7 +11,7 @@ package System::Collections::Generic::Queue; {
   # Generic Queue<T> implementation (FIFO - First In, First Out)
   sub new {
     my ($class, $capacity) = @_;
-    $capacity //= 10; # Default capacity
+    $capacity = 10 unless defined($capacity); # Default capacity
     
     return bless {
       _items => [],

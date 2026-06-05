@@ -135,7 +135,7 @@ package System::IO::MemoryStream; {
       SeekOrigin_End => 2,
     };
     
-    $origin //= SeekOrigin_Begin;
+    $origin = SeekOrigin_Begin unless defined($origin);
     
     my $newPosition;
     if ($origin == SeekOrigin_Begin) {

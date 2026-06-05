@@ -9,7 +9,7 @@ package System::Collections::Generic::KeyNotFoundException; {
   # KeyNotFoundException for Dictionary operations
   sub new {
     my ($class, $message, $innerException) = @_;
-    $message //= "The given key was not present in the dictionary.";
+    $message = "The given key was not present in the dictionary." unless defined($message);
     
     my $this = $class->SUPER::new($message, $innerException);
     return $this;

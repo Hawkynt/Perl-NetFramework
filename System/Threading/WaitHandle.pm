@@ -34,8 +34,8 @@ package System::Threading::WaitHandle; {
     throw(System::ArgumentNullException->new('waitHandles')) unless defined($waitHandles);
     throw(System::ArgumentException->new('waitHandles cannot be empty')) if @$waitHandles == 0;
     
-    $millisecondsTimeout //= -1;
-    $exitContext //= 0;
+    $millisecondsTimeout = -1 unless defined($millisecondsTimeout);
+    $exitContext = 0 unless defined($exitContext);
 
     # Validate all handles upfront (.NET throws before waiting on any handle)
     for my $handle (@$waitHandles) {
@@ -64,8 +64,8 @@ package System::Threading::WaitHandle; {
     throw(System::ArgumentNullException->new('waitHandles')) unless defined($waitHandles);
     throw(System::ArgumentException->new('waitHandles cannot be empty')) if @$waitHandles == 0;
     
-    $millisecondsTimeout //= -1;
-    $exitContext //= 0;
+    $millisecondsTimeout = -1 unless defined($millisecondsTimeout);
+    $exitContext = 0 unless defined($exitContext);
 
     # Validate all handles upfront (.NET throws before waiting on any handle)
     for my $handle (@$waitHandles) {

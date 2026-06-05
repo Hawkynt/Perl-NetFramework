@@ -23,10 +23,10 @@ package System::DateTime; {
     my ($class, $year, $month, $day, $hour, $minute, $second, $millisecond) = @_;
     
     # Default parameters
-    $hour //= 0;
-    $minute //= 0;
-    $second //= 0;
-    $millisecond //= 0;
+    $hour = 0 unless defined($hour);
+    $minute = 0 unless defined($minute);
+    $second = 0 unless defined($second);
+    $millisecond = 0 unless defined($millisecond);
     
     # Validate parameters
     throw(System::ArgumentOutOfRangeException->new('year')) 
@@ -246,7 +246,7 @@ package System::DateTime; {
     my ($this, $format, $formatProvider) = @_;
     throw(System::NullReferenceException->new()) unless defined($this);
     
-    $format //= 'G'; # General format as default
+    $format = 'G' unless defined($format); # General format as default
     
     return _FormatDateTime($this, $format, $formatProvider);
   }
@@ -597,7 +597,7 @@ package System::DateTime; {
     
     # ISO 8601 format: 2023-12-25T14:30:45 or 2023-12-25T14:30:45.123
     if ($dateString =~ /^(\d{4})-(\d{1,2})-(\d{1,2})T(\d{1,2}):(\d{1,2}):(\d{1,2})(?:\.(\d{1,3}))?(?:Z|[+-]\d{2}:\d{2})?$/i) {
-      my ($year, $month, $day, $hour, $minute, $second, $ms) = ($1, $2, $3, $4, $5, $6, $7 // 0);
+      my ($year, $month, $day, $hour, $minute, $second, $ms) = ($1, $2, $3, $4, $5, $6, defined($7) ? $7 : (0));
       $ms = substr($ms . '000', 0, 3); # Pad to 3 digits
       return System::DateTime->new($year, $month, $day, $hour, $minute, $second, $ms);
     }
@@ -689,12 +689,12 @@ package System::DateTime; {
     # For now, assume yyyy-MM-dd HH:mm:ss format
     my ($year, $month, $day, $hour, $minute, $second) = @captures;
     
-    $year //= 1;
-    $month //= 1;
-    $day //= 1;
-    $hour //= 0;
-    $minute //= 0;
-    $second //= 0;
+    $year = 1 unless defined($year);
+    $month = 1 unless defined($month);
+    $day = 1 unless defined($day);
+    $hour = 0 unless defined($hour);
+    $minute = 0 unless defined($minute);
+    $second = 0 unless defined($second);
     
     return System::DateTime->new($year, $month, $day, $hour, $minute, $second);
   }
@@ -703,27 +703,27 @@ package System::DateTime; {
   sub _GetDayName {
     my ($dayOfWeek) = @_;
     my @dayNames = ('Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday');
-    return $dayNames[$dayOfWeek] // 'Sunday';
+    return defined($dayNames[$dayOfWeek]) ? $dayNames[$dayOfWeek] : ('Sunday');
   }
   
   sub _GetDayAbbreviation {
     my ($dayOfWeek) = @_;
     my @dayAbbrevs = ('Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat');
-    return $dayAbbrevs[$dayOfWeek] // 'Sun';
+    return defined($dayAbbrevs[$dayOfWeek]) ? $dayAbbrevs[$dayOfWeek] : ('Sun');
   }
   
   sub _GetMonthName {
     my ($month) = @_;
     my @monthNames = ('', 'January', 'February', 'March', 'April', 'May', 'June',
                       'July', 'August', 'September', 'October', 'November', 'December');
-    return $monthNames[$month] // 'January';
+    return defined($monthNames[$month]) ? $monthNames[$month] : ('January');
   }
   
   sub _GetMonthAbbreviation {
     my ($month) = @_;
     my @monthAbbrevs = ('', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
                         'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec');
-    return $monthAbbrevs[$month] // 'Jan';
+    return defined($monthAbbrevs[$month]) ? $monthAbbrevs[$month] : ('Jan');
   }
 
   BEGIN { CSharp::_ShortenPackageName(__PACKAGE__); }

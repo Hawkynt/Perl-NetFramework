@@ -21,8 +21,8 @@ package System::Buffers::ArrayPool; {
     
     return bless {
       _buckets => {},
-      _maxArrayLength => $maxArrayLength // $DEFAULT_MAX_ARRAY_LENGTH,
-      _maxArraysPerBucket => $maxArraysPerBucket // $DEFAULT_MAX_ARRAYS_PER_BUCKET,
+      _maxArrayLength => defined($maxArrayLength) ? $maxArrayLength : ($DEFAULT_MAX_ARRAY_LENGTH),
+      _maxArraysPerBucket => defined($maxArraysPerBucket) ? $maxArraysPerBucket : ($DEFAULT_MAX_ARRAYS_PER_BUCKET),
       _rentedArrays => {},
       _totalRented => 0,
       _totalReturned => 0,
@@ -32,7 +32,7 @@ package System::Buffers::ArrayPool; {
   # Static method to get shared pool
   sub Shared {
     my ($class, $elementType) = @_;
-    $elementType //= 'SCALAR';  # Default element type
+    $elementType = 'SCALAR' unless defined($elementType);  # Default element type
     
     if (!exists($_sharedPools{$elementType})) {
       $_sharedPools{$elementType} = $class->new();
@@ -54,7 +54,7 @@ package System::Buffers::ArrayPool; {
     throw(System::ArgumentOutOfRangeException->new('minimumLength'))
       if defined($minimumLength) && $minimumLength < 0;
     
-    $minimumLength //= 0;
+    $minimumLength = 0 unless defined($minimumLength);
     
     # Find appropriate bucket size
     my $bucketSize = _GetBucketSize($minimumLength);
@@ -88,7 +88,7 @@ package System::Buffers::ArrayPool; {
     throw(System::NullReferenceException->new()) unless defined($this);
     throw(System::ArgumentNullException->new('array')) unless defined($array);
     
-    $clearArray //= false;
+    $clearArray = false unless defined($clearArray);
     
     # Validate that this array was rented from this pool
     my $rentInfo = delete $this->{_rentedArrays}->{$array};
@@ -106,7 +106,7 @@ package System::Buffers::ArrayPool; {
     }
     
     # Add to appropriate bucket if not full
-    $this->{_buckets}->{$bucketSize} //= [];
+    $this->{_buckets}->{$bucketSize} = [] unless defined($this->{_buckets}->{$bucketSize});
     my $bucket = $this->{_buckets}->{$bucketSize};
     
     if (scalar(@$bucket) < $this->{_maxArraysPerBucket}) {
@@ -155,7 +155,7 @@ package System::Buffers::ArrayPool; {
     my ($this, $factor) = @_;
     throw(System::NullReferenceException->new()) unless defined($this);
     
-    $factor //= 0.9;  # Trim 10% by default
+    $factor = 0.9 unless defined($factor);  # Trim 10% by default
     throw(System::ArgumentOutOfRangeException->new('factor'))
       if $factor < 0 || $factor > 1;
     

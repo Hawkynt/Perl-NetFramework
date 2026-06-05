@@ -11,8 +11,8 @@ package System::AggregateException; {
   sub new {
     my ($class, $innerExceptions, $message) = @_;
     
-    $innerExceptions //= [];
-    $message //= 'One or more errors occurred.';
+    $innerExceptions = [] unless defined($innerExceptions);
+    $message = 'One or more errors occurred.' unless defined($message);
     
     # Ensure innerExceptions is an array reference
     if (ref($innerExceptions) ne 'ARRAY') {

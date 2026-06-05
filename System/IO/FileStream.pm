@@ -28,8 +28,8 @@ package System::IO::FileStream; {
       FileAccess_ReadWrite => 3,
     };
     
-    $mode //= FileMode_OpenOrCreate;
-    $access //= FileAccess_ReadWrite;
+    $mode = FileMode_OpenOrCreate unless defined($mode);
+    $access = FileAccess_ReadWrite unless defined($access);
     
     my $this = $class->SUPER::new();
     
@@ -221,7 +221,7 @@ package System::IO::FileStream; {
       SeekOrigin_End => 2,
     };
     
-    $origin //= SeekOrigin_Begin;
+    $origin = SeekOrigin_Begin unless defined($origin);
     
     my $whence;
     if ($origin == SeekOrigin_Begin) {

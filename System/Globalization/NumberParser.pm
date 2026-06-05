@@ -14,8 +14,8 @@ package System::Globalization::NumberParser; {
     # Validate arguments
     throw(System::ArgumentNullException->new('value')) unless defined($value);
     throw(System::ArgumentNullException->new('style')) unless defined($style);
-    $culture //= System::Globalization::CultureInfo->InvariantCulture();
-    $targetType //= 'System::Int32';
+    $culture = System::Globalization::CultureInfo->InvariantCulture() unless defined($culture);
+    $targetType = 'System::Int32' unless defined($targetType);
     
     # Convert value to string if it's an object
     if (ref($value) && $value->can('ToString')) {

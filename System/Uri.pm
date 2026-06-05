@@ -27,7 +27,7 @@ package System::Uri; {
     my ($class, $uriString, $uriKind) = @_;
     throw(System::ArgumentNullException->new('uriString')) unless defined($uriString);
     
-    $uriKind //= RelativeOrAbsolute;
+    $uriKind = RelativeOrAbsolute unless defined($uriKind);
     
     my $this = bless {
       _original_string => $uriString,
@@ -85,7 +85,7 @@ package System::Uri; {
     if ($uriString =~ m{^([a-zA-Z][a-zA-Z0-9+.-]*):(?://([^/?#]*))?([^?#]*)(?:\?([^#]*))?(?:#(.*))?$}) {
       $this->{_scheme} = lc($1);
       my $authority = $2;
-      $this->{_path} = $3 // '';
+      $this->{_path} = defined($3) ? $3 : ('');
       $this->{_query} = $4;
       $this->{_fragment} = $5;
       
@@ -94,7 +94,7 @@ package System::Uri; {
         if ($authority eq '' || $authority =~ /^(?:([^@]+)@)?(\[[^\]]+\]|[^:]*?)(?::(\d+))?$/) {
           my ($userinfo, $host, $port) = ($1, $2, $3);
           $this->{_user_info} = $userinfo;
-          $host //= '';
+          $host = '' unless defined($host);
           # Remove brackets from IPv6 addresses
           $host =~ s/^\[|\]$//g if $host =~ /^\[.*\]$/;
           $this->{_host} = lc($host);
@@ -135,7 +135,7 @@ package System::Uri; {
     
     # Pattern: [path][?query][#fragment]
     if ($uriString =~ m{^([^?#]*)(?:\?([^#]*))?(?:#(.*))?$}) {
-      $this->{_path} = $this->_NormalizePath($1 // '');
+      $this->{_path} = $this->_NormalizePath(defined($1) ? $1 : (''));
       $this->{_query} = $2;
       $this->{_fragment} = $3;
     } else {
@@ -162,7 +162,7 @@ package System::Uri; {
       'ldaps' => 636,
     );
     
-    return $default_ports{$scheme} // -1;
+    return defined($default_ports{$scheme}) ? $default_ports{$scheme} : (-1);
   }
   
   # Normalize path (remove . and .. components)
@@ -224,7 +224,7 @@ package System::Uri; {
   sub Host {
     my ($this) = @_;
     throw(System::NullReferenceException->new()) unless defined($this);
-    return $this->{_host} // '';
+    return defined($this->{_host}) ? $this->{_host} : ('');
   }
   
   sub Port {
@@ -237,14 +237,14 @@ package System::Uri; {
     my ($this) = @_;
     throw(System::NullReferenceException->new()) unless defined($this);
     throw(System::InvalidOperationException->new('Not an absolute URI')) unless $this->{_is_absolute};
-    return $this->{_path} // '/';
+    return defined($this->{_path}) ? $this->{_path} : ('/');
   }
   
   sub PathAndQuery {
     my ($this) = @_;
     throw(System::NullReferenceException->new()) unless defined($this);
     
-    my $result = $this->{_path} // '';
+    my $result = defined($this->{_path}) ? $this->{_path} : ('');
     if (defined($this->{_query})) {
       $result .= '?' . $this->{_query};
     }
@@ -266,7 +266,7 @@ package System::Uri; {
   sub UserInfo {
     my ($this) = @_;
     throw(System::NullReferenceException->new()) unless defined($this);
-    return $this->{_user_info} // '';
+    return defined($this->{_user_info}) ? $this->{_user_info} : ('');
   }
   
   sub Authority {
@@ -316,7 +316,7 @@ package System::Uri; {
     throw(System::NullReferenceException->new()) unless defined($this);
     
     if ($this->{_is_file}) {
-      my $path = $this->{_path} // '';
+      my $path = defined($this->{_path}) ? $this->{_path} : ('');
       # Convert forward slashes to backslashes on Windows
       if ($^O =~ /win/i) {
         $path =~ s{/}{\\}g;
@@ -324,14 +324,14 @@ package System::Uri; {
       return $path;
     }
     
-    return $this->{_path} // '';
+    return defined($this->{_path}) ? $this->{_path} : ('');
   }
   
   sub Segments {
     my ($this) = @_;
     throw(System::NullReferenceException->new()) unless defined($this);
     
-    my $path = $this->{_path} // '';
+    my $path = defined($this->{_path}) ? $this->{_path} : ('');
     return [''] unless $path;
     
     my @segments = split('/', $path);
@@ -362,7 +362,7 @@ package System::Uri; {
     }
     
     # Add path
-    $result .= $this->{_path} // '';
+    $result .= defined($this->{_path}) ? $this->{_path} : ('');
     
     # Add query
     if (defined($this->{_query})) {

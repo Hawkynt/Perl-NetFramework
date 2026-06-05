@@ -141,7 +141,7 @@ package System::Text::StringBuilder; {
     throw(System::NullReferenceException->new()) unless defined($this);
     throw(System::ArgumentNullException->new('value')) unless defined($value);
     
-    $repeatCount //= 1;
+    $repeatCount = 1 unless defined($repeatCount);
     my $count = ref($repeatCount) ? $repeatCount->Value() : $repeatCount;
     throw(System::ArgumentOutOfRangeException->new('repeatCount'))
       if $count < 0;

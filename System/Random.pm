@@ -169,7 +169,7 @@ package System::Random; {
   
   sub Shared {
     my ($class) = @_;
-    $_shared //= $class->new();
+    $_shared = $class->new() unless defined($_shared);
     return $_shared;
   }
   
@@ -226,8 +226,8 @@ package System::Random; {
     throw(System::ArgumentOutOfRangeException->new('length'))
       if defined($length) && $length < 0;
     
-    $length //= 10;
-    $charset //= 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    $length = 10 unless defined($length);
+    $charset = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789' unless defined($charset);
     
     return '' if $length == 0;
     
@@ -251,8 +251,8 @@ package System::Random; {
     my ($this, $mean, $stdDev) = @_;
     throw(System::NullReferenceException->new()) unless defined($this);
     
-    $mean //= 0.0;
-    $stdDev //= 1.0;
+    $mean = 0.0 unless defined($mean);
+    $stdDev = 1.0 unless defined($stdDev);
     
     if ($_hasSpare) {
       $_hasSpare = false;

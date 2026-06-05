@@ -109,7 +109,7 @@ package System::IOException;{
   sub new {
     my $class=shift(@_);
     my($ioMessage)=@_;
-    $ioMessage //= "An I/O error occurred";
+    $ioMessage = "An I/O error occurred" unless defined($ioMessage);
     my $this=System::Exception::new($class,sprintf(System::Resources::EX_IO,$ioMessage));
     $this->{IOMessage}=$ioMessage;
     return($this);
@@ -201,8 +201,8 @@ package System::ArgumentOutOfRangeException;{
   sub new {
     my $class=shift(@_);
     my($argumentName,$argumentValue)=@_;
-    $argumentName //= 'argument';
-    $argumentValue //= 'undefined';
+    $argumentName = 'argument' unless defined($argumentName);
+    $argumentValue = 'undefined' unless defined($argumentValue);
     my $this=System::Exception::new($class,sprintf(System::Resources::EX_ARGUMENT_OUT_OF_RANGE,$argumentName,$argumentValue));
     $this->{ArgumentName}=$argumentName;
     $this->{Value}=$argumentValue;

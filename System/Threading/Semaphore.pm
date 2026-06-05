@@ -47,8 +47,8 @@ package System::Threading::Semaphore; {
     my ($this, $millisecondsTimeout, $exitContext) = @_;
     throw(System::ObjectDisposedException->new('Semaphore')) if $this->{_disposed};
     
-    $millisecondsTimeout //= -1;  # Infinite timeout by default
-    $exitContext //= 0;
+    $millisecondsTimeout = -1 unless defined($millisecondsTimeout);  # Infinite timeout by default
+    $exitContext = 0 unless defined($exitContext);
     
     my $start_time = time() * 1000;  # Convert to milliseconds
     
@@ -80,7 +80,7 @@ package System::Threading::Semaphore; {
     my ($this, $releaseCount) = @_;
     throw(System::ObjectDisposedException->new('Semaphore')) if $this->{_disposed};
     
-    $releaseCount //= 1;
+    $releaseCount = 1 unless defined($releaseCount);
     throw(System::ArgumentOutOfRangeException->new('releaseCount'))
       if $releaseCount < 1;
     

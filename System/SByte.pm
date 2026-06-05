@@ -15,7 +15,7 @@ package System::SByte; {
   
   sub new {
     my ($class, $value) = @_;
-    $value //= 0;
+    $value = 0 unless defined($value);
     
     # Validate range
     if ($value < -128 || $value > 127) {
@@ -81,14 +81,14 @@ package System::SByte; {
       my $val = $this->{_value} < 0 ? $this->{_value} + 256 : $this->{_value};
       return sprintf($format eq 'X' ? '%02X' : '%02x', $val);
     } elsif ($format =~ /^D(\d+)?$/) {
-      my $width = $1 // 1;
+      my $width = defined($1) ? $1 : (1);
       return sprintf("%0${width}d", $this->{_value});
     } elsif ($format =~ /^X(\d+)?$/) {
-      my $width = $1 // 2;
+      my $width = defined($1) ? $1 : (2);
       my $val = $this->{_value} < 0 ? $this->{_value} + 256 : $this->{_value};
       return sprintf("%0${width}X", $val);
     } elsif ($format =~ /^x(\d+)?$/) {
-      my $width = $1 // 2;
+      my $width = defined($1) ? $1 : (2);
       my $val = $this->{_value} < 0 ? $this->{_value} + 256 : $this->{_value};
       return sprintf("%0${width}x", $val);
     } else {

@@ -12,7 +12,7 @@ package System::Text::Encoding; {
     my ($class, $codePage, $encoderFallback, $decoderFallback) = @_;
     
     return bless {
-      _codePage => $codePage // 0,
+      _codePage => defined($codePage) ? $codePage : (0),
       _encoderFallback => $encoderFallback,
       _decoderFallback => $decoderFallback,
       _isReadOnly => false,
@@ -100,8 +100,8 @@ package System::Text::Encoding; {
     throw(System::NullReferenceException->new()) unless defined($this);
     throw(System::ArgumentNullException->new('bytes')) unless defined($bytes);
     
-    $index //= 0;
-    $count //= (ref($bytes) eq 'ARRAY' ? @$bytes : $bytes->Length()) - $index;
+    $index = 0 unless defined($index);
+    $count = (ref($bytes) eq 'ARRAY' ? @$bytes : $bytes->Length()) - $index unless defined($count);
     
     # Convert System::Array to array if needed
     my @byteArray;
@@ -139,31 +139,31 @@ package System::Text::Encoding; {
   
   sub ASCII {
     require System::Text::ASCIIEncoding;
-    $_ascii //= System::Text::ASCIIEncoding->new();
+    $_ascii = System::Text::ASCIIEncoding->new() unless defined($_ascii);
     return $_ascii;
   }
   
   sub UTF8 {
     require System::Text::UTF8Encoding;
-    $_utf8 //= System::Text::UTF8Encoding->new();
+    $_utf8 = System::Text::UTF8Encoding->new() unless defined($_utf8);
     return $_utf8;
   }
   
   sub Unicode {
     require System::Text::UnicodeEncoding;
-    $_unicode //= System::Text::UnicodeEncoding->new();
+    $_unicode = System::Text::UnicodeEncoding->new() unless defined($_unicode);
     return $_unicode;
   }
   
   sub UTF32 {
     require System::Text::UTF32Encoding;
-    $_utf32 //= System::Text::UTF32Encoding->new();
+    $_utf32 = System::Text::UTF32Encoding->new() unless defined($_utf32);
     return $_utf32;
   }
   
   sub Default {
     require System::Text::UTF8Encoding;
-    $_default //= System::Text::UTF8Encoding->new();  # Default to UTF-8
+    $_default = System::Text::UTF8Encoding->new() unless defined($_default);  # Default to UTF-8
     return $_default;
   }
   

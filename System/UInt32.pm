@@ -15,7 +15,7 @@ package System::UInt32; {
   
   sub new {
     my ($class, $value) = @_;
-    $value //= 0;
+    $value = 0 unless defined($value);
     
     if ($value < 0 || $value > 4294967295) {
       throw(System::OverflowException->new("Value was either too large or too small for a UInt32"));

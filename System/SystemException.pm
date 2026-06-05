@@ -10,7 +10,7 @@ package System::SystemException; {
   
   sub new {
     my ($class, $message, $innerException) = @_;
-    $message //= 'System error.';
+    $message = 'System error.' unless defined($message);
     
     return $class->SUPER::new($message, $innerException);
   }

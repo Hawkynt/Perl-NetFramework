@@ -10,7 +10,7 @@ package System::ComponentModel::CancelEventArgs; {
   # CancelEventArgs - provides data for cancelable events
   sub new {
     my ($class, $cancel) = @_;
-    $cancel //= false;
+    $cancel = false unless defined($cancel);
     
     # Validate cancel parameter
     throw(System::ArgumentException->new('cancel must be a boolean value'))

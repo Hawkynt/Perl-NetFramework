@@ -125,7 +125,7 @@ package System::IO::FileInfo; {
     throw(System::ArgumentNullException->new('destFileName')) unless defined($destFileName);
     throw(System::FileNotFoundException->new($this->{_fullPath})) unless $this->Exists();
     
-    $overwrite //= 0;
+    $overwrite = 0 unless defined($overwrite);
     
     if (!$overwrite && -e $destFileName) {
       throw(System::IOException->new("Destination file already exists: $destFileName"));
@@ -203,7 +203,7 @@ package System::IO::FileInfo; {
     my $content = do { local $/; <$fh> };
     close($fh);
     
-    return $content // '';
+    return defined($content) ? $content : ('');
   }
   
   sub ReadAllLines {

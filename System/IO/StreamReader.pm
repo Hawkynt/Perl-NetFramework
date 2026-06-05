@@ -31,7 +31,7 @@ package System::IO::StreamReader; {
     throw(System::ArgumentException->new('Stream must support reading')) unless $this->{_stream}->CanRead();
     
     # Set up encoding (simplified - just UTF-8 for now)
-    $this->{_encoding} = $encoding // 'utf8';
+    $this->{_encoding} = defined($encoding) ? $encoding : ('utf8');
     $this->{_buffer} = '';
     $this->{_bufferPos} = 0;
     $this->{_byteBuf} = [];

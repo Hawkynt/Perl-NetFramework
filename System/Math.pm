@@ -262,7 +262,7 @@ package System::Math; {
   # Additional rounding methods
   sub RoundToEven($$) {
     my($value, $digits) = @_;
-    $digits //= 0;
+    $digits = 0 unless defined($digits);
     my $factor = 10 ** $digits;
     my $scaled = $value * $factor;
     my $integral = int($scaled);

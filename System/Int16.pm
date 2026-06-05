@@ -15,7 +15,7 @@ package System::Int16; {
   
   sub new {
     my ($class, $value) = @_;
-    $value //= 0;
+    $value = 0 unless defined($value);
     
     # Validate range
     if ($value < -32768 || $value > 32767) {
@@ -81,14 +81,14 @@ package System::Int16; {
       my $val = $this->{_value} < 0 ? $this->{_value} + 65536 : $this->{_value};
       return sprintf($format eq 'X' ? '%04X' : '%04x', $val);
     } elsif ($format =~ /^D(\d+)?$/) {
-      my $width = $1 // 1;
+      my $width = defined($1) ? $1 : (1);
       return sprintf("%0${width}d", $this->{_value});
     } elsif ($format =~ /^X(\d+)?$/) {
-      my $width = $1 // 4;
+      my $width = defined($1) ? $1 : (4);
       my $val = $this->{_value} < 0 ? $this->{_value} + 65536 : $this->{_value};
       return sprintf("%0${width}X", $val);
     } elsif ($format =~ /^x(\d+)?$/) {
-      my $width = $1 // 4;
+      my $width = defined($1) ? $1 : (4);
       my $val = $this->{_value} < 0 ? $this->{_value} + 65536 : $this->{_value};
       return sprintf("%0${width}x", $val);
     } else {

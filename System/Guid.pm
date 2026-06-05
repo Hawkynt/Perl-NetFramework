@@ -57,7 +57,7 @@ package System::Guid; {
   # Properties
   sub Empty {
     my ($class) = @_;
-    $_empty //= System::Guid->new();
+    $_empty = System::Guid->new() unless defined($_empty);
     return $_empty;
   }
   
@@ -66,7 +66,7 @@ package System::Guid; {
     my ($this, $format) = @_;
     throw(System::NullReferenceException->new()) unless defined($this);
     
-    $format //= 'D';
+    $format = 'D' unless defined($format);
     
     my $bytes = $this->{_bytes};
     

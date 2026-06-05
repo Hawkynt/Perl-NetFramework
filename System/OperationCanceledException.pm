@@ -10,7 +10,7 @@ package System::OperationCanceledException; {
   
   sub new {
     my ($class, $message, $innerException) = @_;
-    $message //= 'The operation was canceled.';
+    $message = 'The operation was canceled.' unless defined($message);
     
     return $class->SUPER::new($message, $innerException);
   }
