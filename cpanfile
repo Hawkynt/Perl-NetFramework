@@ -1,4 +1,4 @@
-requires 'perl', '5.010001';
+requires 'perl', '5.008';
 
 # Core dependencies
 requires 'strict';

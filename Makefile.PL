@@ -1,4 +1,4 @@
-use 5.010001;
+use 5.008;
 use strict;
 use warnings;
 use ExtUtils::MakeMaker;
@@ -9,7 +9,7 @@ WriteMakefile(
     VERSION_FROM     => 'lib/System.pm',
     ABSTRACT         => 'A comprehensive clone of the .NET Framework Base Class Library (BCL) implemented in pure Perl',
     LICENSE          => 'lgpl_3_0',
-    MIN_PERL_VERSION => '5.010001',
+    MIN_PERL_VERSION => '5.008',
     
     CONFIGURE_REQUIRES => {
         'ExtUtils::MakeMaker' => '0',

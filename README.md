@@ -916,7 +916,7 @@ perl run_all_tests.pl
 ```
 
 ### 🔧 Core Dependencies
-- 🐪 **Perl 5.10.1+** (tested with Perl 5.30-5.36)
+- 🐪 **Perl 5.8+** (tested with Perl 5.8-5.36 on Linux, 5.14-5.36 on Windows)
 - 📦 **Core modules**: strict, warnings, Exporter, Scalar::Util, Filter::Simple
 
 ### 🎨 Optional Dependencies
@@ -1168,7 +1168,7 @@ GitHub Actions automatically runs:
 - **Individual test files** with proper -I. flags
 - **System framework tests** for core functionality
 - **Filter::CSharp tests** for syntax transformation
-- **Multi-version testing** on Perl 5.30-5.36
+- **Multi-version testing** on Perl 5.8-5.36
 
 ### 🔧 **Test Development Notes**
 - All tests use `-I.` flag to include current directory in @INC
@@ -1217,7 +1217,7 @@ For maintainers, releases are fully automated and triggered by successful CI run
 
 **Automated Release Process:**
 1. 📝 **Version Update**: Script updates version in `System.pm` and commits
-2. 🧪 **CI Trigger**: Push triggers comprehensive tests across Perl 5.30-5.36
+2. 🧪 **CI Trigger**: Push triggers comprehensive tests across Perl 5.8-5.36
 3. 🚀 **Auto-Release**: When CI passes, release workflow automatically:
    - Creates CPAN-compatible distribution packages
    - Generates changelog from git commits  
