@@ -17,20 +17,24 @@ package System::Threading::ThreadPool; {
   my @_workerThreads = ();
   my @_workQueue = ();
   my $_initialized = false;
-  
+  my $_threadsAvailable;
+
   # Static methods
+  sub _ThreadsAvailable {
+    $_threadsAvailable = (eval { require threads; 1 } ? true : false) unless defined($_threadsAvailable);
+    return $_threadsAvailable;
+  }
+
   sub QueueUserWorkItem {
     my ($class, $callback, $state) = @_;
     throw(System::ArgumentNullException->new('callback')) unless defined($callback);
     throw(System::ArgumentException->new('callback must be a CODE reference'))
       unless ref($callback) eq 'CODE';
-    
-    _InitializeThreadPool() unless $_initialized;
-    
-    # Check if threads are available
-    eval { require threads; };
-    if ($@) {
-      # Fallback: execute synchronously if threads not available
+
+    # Fallback: execute synchronously if threads are not available. This must be
+    # checked BEFORE initializing the pool - starting a worker on a non-threaded
+    # perl would run its polling loop inline and never return.
+    unless (_ThreadsAvailable()) {
       eval {
         $callback->($state);
       };
@@ -39,7 +43,9 @@ package System::Threading::ThreadPool; {
       }
       return true;
     }
-    
+
+    _InitializeThreadPool() unless $_initialized;
+
     # Add work item to queue
     push @_workQueue, {
       callback => $callback,
@@ -126,13 +132,16 @@ package System::Threading::ThreadPool; {
   # Internal methods
   sub _InitializeThreadPool {
     return if $_initialized;
-    
-    # Pre-create minimum worker threads
-    for my $i (1..$_minWorkerThreads) {
-      my $workerThread = _CreateWorkerThread($i);
-      push @_workerThreads, $workerThread;
+
+    # Pre-create minimum worker threads (only when real threads exist - the
+    # synchronous fallback executes work items directly without a pool)
+    if (_ThreadsAvailable()) {
+      for my $i (1..$_minWorkerThreads) {
+        my $workerThread = _CreateWorkerThread($i);
+        push @_workerThreads, $workerThread;
+      }
     }
-    
+
     $_availableWorkerThreads = $_maxWorkerThreads - scalar(@_workerThreads);
     $_initialized = true;
   }
