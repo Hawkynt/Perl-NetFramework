@@ -13,6 +13,10 @@
 ![Code Size](https://img.shields.io/github/languages/code-size/Hawkynt/Perl-NetFramework?color=4CAF50)
 ![Repo Size](https://img.shields.io/github/repo-size/Hawkynt/Perl-NetFramework?color=FF9800)
 
+[![Release](https://img.shields.io/github/v/release/Hawkynt/Perl-NetFramework)](https://github.com/Hawkynt/Perl-NetFramework/releases/latest)
+[![Nightly](https://img.shields.io/github/v/release/Hawkynt/Perl-NetFramework?include_prereleases&sort=date&filter=nightly-*&label=nightly&color=FF9800)](https://github.com/Hawkynt/Perl-NetFramework/releases)
+[![Downloads](https://img.shields.io/github/downloads/Hawkynt/Perl-NetFramework/total)](https://github.com/Hawkynt/Perl-NetFramework/releases)
+
 > A comprehensive clone of the .NET Framework Base Class Library (BCL) implemented in pure Perl.
 
 Perl-NetFramework brings the familiar .NET programming model to Perl, providing a rich set of classes, interfaces, and language constructs that mirror the .NET Framework's Base Class Library. This project enables developers to write Perl code using .NET-style patterns, object-oriented design, and familiar APIs.
