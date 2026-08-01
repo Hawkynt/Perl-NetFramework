@@ -38,18 +38,20 @@ jobs:
         with:
           perl-version: '5.36'
 
-      - name: Determine distribution name (before stamping)
+      # Stamping first means System.pm already carries the composed version, so the distribution
+      # name is read straight from the file the distribution ships rather than recomputed.
+      - name: Stamp per-package versions
+        uses: Hawkynt/RepositoryTemplate/stamp-version@v1
+
+      - name: Determine distribution name (from the stamped System.pm)
         run: |
-          VERSION=$(perl .github/workflows/scripts/version.pl --list | awk -F'\t' '$1 ~ /System\.pm$/ { print $2 }')
+          VERSION=$(perl -ne 'if (/\$VERSION\s*=\s*[\x27"]v?([0-9][0-9.]*)/) { print $1; exit }' System.pm)
           if [ -z "$VERSION" ]; then
             echo "::error::could not determine version from System.pm"
             exit 1
           fi
           echo "DIST_NAME=Perl-NetFramework-${VERSION}" >> "$GITHUB_ENV"
           echo "Distribution: Perl-NetFramework-${VERSION}"
-
-      - name: Stamp per-package versions
-        run: perl .github/workflows/scripts/version.pl --stamp
 
       - name: Create CPAN distribution layout
         run: |
