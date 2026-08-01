@@ -69,22 +69,31 @@ green, promote them into the required tier.
 - **`_build.yml` is the single packaging block**, shared by release and nightly so they never diverge.
 - **3-generation (GFS) retention**, not "keep last N". GFS guarantees at least one build per week for a month and one per month for a quarter.
 
-## Scripts
+## Shared actions
 
-### `version.pl`
+This repo carries no pipeline scripts of its own. Versioning, changelog generation and nightly
+pruning come from composite actions in
+[`Hawkynt/RepositoryTemplate`](https://github.com/Hawkynt/RepositoryTemplate), so the single
+canonical copy cannot drift between repos.
 
-The one versioner, identical in every Hawkynt repo. Here it finds `System.pm`'s
-`$VERSION` and stamps it as `X.Y.BUILD` where BUILD = commits touching the
-repository root.
+### `stamp-version`
 
+The one versioner. Here it finds `System.pm`'s `$VERSION` and stamps it as `X.Y.BUILD`, where BUILD
+is the number of commits touching the declaring file's folder.
+
+```yaml
+- uses: Hawkynt/RepositoryTemplate/stamp-version@v1     # rewrite the version in every manifest
+- uses: Hawkynt/RepositoryTemplate/stamp-version@v1     # or compute without touching the tree:
+  with:
+    mode: print
 ```
-perl .github/workflows/scripts/version.pl --stamp  # rewrite the version in every manifest
-perl .github/workflows/scripts/version.pl --build  # print the build number (commit count)
-perl .github/workflows/scripts/version.pl --list   # "<manifest>\t<composed-version>" per package
-```
 
-To bump the base version, edit `$VERSION` in `System.pm`; the build number
-follows the commit count automatically.
+It needs `actions/checkout` with `fetch-depth: 0`, since the build number is a commit count; a
+shallow checkout fails the step rather than stamping everything with 1.
+
+To bump the base version, edit `$VERSION` in `System.pm`; the build number follows the commit count
+automatically. To run it by hand, clone the template and invoke `scripts/version.pl` from this
+repo's working directory.
 
 ### `update-changelog.mjs`
 
