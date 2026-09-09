@@ -21,6 +21,17 @@
 
 Perl-NetFramework brings the familiar .NET programming model to Perl, providing a rich set of classes, interfaces, and language constructs that mirror the .NET Framework's Base Class Library. This project enables developers to write Perl code using .NET-style patterns, object-oriented design, and familiar APIs.
 
+## 🧭 Vision
+
+Perl has everything a large program needs and almost none of it under a name a .NET developer would
+recognise. This is the .NET base class library rebuilt in pure Perl — `List<T>`, `Dictionary<K,V>`,
+LINQ, delegates and events, threading and the Task Parallel Library — with the same names, the same
+shapes and the same semantics.
+
+The point is portability of *knowledge*, not of code: a developer who knows one platform should be
+able to write on the other without relearning the standard library. Pure Perl throughout, so it runs
+wherever Perl does.
+
 ## ✨ Features
 
 ### 🔧 Core Language Constructs
@@ -148,107 +159,19 @@ Perl-NetFramework brings the familiar .NET programming model to Perl, providing 
 - **👥 Active Directory**: User and group management through System::DirectoryServices
 - **🔐 Authentication**: Principal-based authentication and authorization
 
-## 📁 Project Structure
+## 📦 Installation
 
-```
-Perl-NetFramework/
-├── System.pm                    # Main namespace entry point
-├── CSharp.pm                    # Core language constructs and utilities
-├── Filter/                      # Alternative implementations
-│   └── CSharp.pm               
-├── tests/                       # Comprehensive test suite
-│   ├── README.md               # Test documentation and usage
-│   ├── run_tests.pl            # Test runner with colored output
-│   └── System/                 # Test files organized by namespace
-│       ├── Object.pl           # System::Object tests
-│       ├── String.pl           # System::String tests
-│       ├── Array.pl            # System::Array tests
-│       ├── Collections/        # Collection tests
-│       │   └── Generic/        # Generic collection tests
-│       ├── Linq/               # LINQ operation tests
-│       ├── IO/                 # File I/O tests
-│       └── Diagnostics/        # Diagnostics tests
-└── System/                      # .NET BCL namespace hierarchy
-    ├── Object.pm                # Base object class
-    ├── String.pm                # String manipulation
-    ├── Array.pm                 # Array collections
-    ├── Math.pm                  # Mathematical operations
-    ├── Guid.pm                  # Globally unique identifiers
-    ├── Environment.pm           # System environment access
-    ├── Console.pm               # Console I/O operations
-    ├── Convert.pm               # Type conversion system
-    ├── Uri.pm                   # URI/URL handling
-    ├── Collections/             # Collection classes
-    │   ├── Hashtable.pm        
-    │   ├── IEnumerable.pm      
-    │   ├── IEnumerator.pm
-    │   ├── Generic/             # Generic collections
-    │   │   ├── List.pm          # List<T>
-    │   │   ├── Dictionary.pm    # Dictionary<TKey, TValue>
-    │   │   ├── Stack.pm         # Stack<T>
-    │   │   ├── Queue.pm         # Queue<T>
-    │   │   ├── LinkedList.pm    # LinkedList<T>
-    │   │   ├── KeyValuePair.pm  # KeyValuePair<TKey, TValue>
-    │   │   └── [enumerators]    # Supporting classes
-    │   ├── Concurrent/          # Thread-safe collections
-    │   │   ├── ConcurrentQueue.pm      # Thread-safe queue
-    │   │   ├── ConcurrentDictionary.pm # Thread-safe dictionary
-    │   │   ├── ConcurrentStack.pm      # Thread-safe stack
-    │   │   └── ConcurrentBag.pm        # Thread-safe bag
-    │   └── Specialized/         # Specialized collections
-    │       ├── INotifyCollectionChanged.pm
-    │       ├── NotifyCollectionChangedEventArgs.pm
-    │       └── NotifyCollectionChangedAction.pm
-    ├── ComponentModel/          # Data binding and events
-    │   ├── BindingList.pm       # Data-binding collection
-    │   ├── INotifyPropertyChanged.pm
-    │   ├── INotifyPropertyChanging.pm
-    │   ├── PropertyChangedEventArgs.pm
-    │   ├── PropertyChangingEventArgs.pm
-    │   └── CancelEventArgs.pm
-    ├── Delegate.pm              # Method pointer system
-    ├── Event.pm                 # Event management
-    ├── EventArgs.pm             # Base event arguments class
-    ├── Buffers/                 # Memory management
-    │   └── ArrayPool.pm         # Array pooling for efficiency
-    ├── Linq/                    # LINQ implementation
-    │   ├── SelectIterator.pm   
-    │   ├── WhereIterator.pm    
-    │   └── [other iterators]   
-    ├── IO/                      # File system operations
-    │   ├── File.pm             
-    │   ├── Directory.pm        
-    │   ├── Path.pm
-    │   ├── Stream.pm            # Base stream class
-    │   ├── TextReader.pm        # Text reading base class
-    │   ├── TextWriter.pm        # Text writing base class
-    │   ├── StreamReader.pm      # Stream-based text reader
-    │   └── StreamWriter.pm      # Stream-based text writer
-    ├── Text/                    # Text processing
-    │   ├── StringBuilder.pm     # Efficient string building
-    │   └── Encoding.pm          # Text encoding support
-    ├── Threading/               # Threading support
-    │   ├── Thread.pm            # Basic threading
-    │   ├── ThreadPool.pm        # Thread pool management
-    │   ├── WaitHandle.pm        # Base synchronization class
-    │   ├── EventWaitHandle.pm   # Event-based synchronization base
-    │   ├── Mutex.pm             # Mutual exclusion
-    │   ├── Semaphore.pm         # Counting semaphore
-    │   ├── AutoResetEvent.pm    # Auto-resetting event
-    │   ├── ManualResetEvent.pm  # Manual reset event
-    │   └── Tasks/               # Task Parallel Library
-    │       ├── Task.pm          # Asynchronous task operations
-    │       └── TaskAwaiter.pm   # Task awaiting support
-    ├── Random.pm                # Random number generation
-    ├── Windows/Forms/           # GUI components
-    │   ├── MessageBox.pm       
-    │   └── [dialog resources]  
-    └── Diagnostics/             # Debugging and diagnostics
-        ├── Stopwatch.pm        
-        └── Trace.pm            
+Clone the repository and add `System/` to your `@INC`; there is nothing to compile and no XS.
+
+```perl
+use lib 'path/to/Perl-NetFramework/System';
+use System;
 ```
 
-## 🚀 Usage Examples
+The full dependency picture is in
+[Installation and dependencies](#-installation-and-dependencies) below.
+
+## 🚀 Quick start
 
 ### 🎭 C# Syntax Transformation (Filter::CSharp)
 
@@ -880,60 +803,107 @@ switch $value,
     default { print "Unknown" };
 ```
 
-## 📦 Installation and Dependencies
+## 📁 Project Structure
 
-### 📥 Quick Install (Recommended)
-
-**Download the latest release:**
-```bash
-# Download from GitHub Releases
-wget https://github.com/Hawkynt/Perl-NetFramework/releases/latest/download/Perl-NetFramework-1.00.tar.gz
-tar -xzf Perl-NetFramework-1.00.tar.gz
-cd Perl-NetFramework-1.00
-
-# Install using standard Perl tools
-perl Makefile.PL
-make test
-make install
+```
+Perl-NetFramework/
+├── System.pm                    # Main namespace entry point
+├── CSharp.pm                    # Core language constructs and utilities
+├── Filter/                      # Alternative implementations
+│   └── CSharp.pm               
+├── tests/                       # Comprehensive test suite
+│   ├── README.md               # Test documentation and usage
+│   ├── run_tests.pl            # Test runner with colored output
+│   └── System/                 # Test files organized by namespace
+│       ├── Object.pl           # System::Object tests
+│       ├── String.pl           # System::String tests
+│       ├── Array.pl            # System::Array tests
+│       ├── Collections/        # Collection tests
+│       │   └── Generic/        # Generic collection tests
+│       ├── Linq/               # LINQ operation tests
+│       ├── IO/                 # File I/O tests
+│       └── Diagnostics/        # Diagnostics tests
+└── System/                      # .NET BCL namespace hierarchy
+    ├── Object.pm                # Base object class
+    ├── String.pm                # String manipulation
+    ├── Array.pm                 # Array collections
+    ├── Math.pm                  # Mathematical operations
+    ├── Guid.pm                  # Globally unique identifiers
+    ├── Environment.pm           # System environment access
+    ├── Console.pm               # Console I/O operations
+    ├── Convert.pm               # Type conversion system
+    ├── Uri.pm                   # URI/URL handling
+    ├── Collections/             # Collection classes
+    │   ├── Hashtable.pm        
+    │   ├── IEnumerable.pm      
+    │   ├── IEnumerator.pm
+    │   ├── Generic/             # Generic collections
+    │   │   ├── List.pm          # List<T>
+    │   │   ├── Dictionary.pm    # Dictionary<TKey, TValue>
+    │   │   ├── Stack.pm         # Stack<T>
+    │   │   ├── Queue.pm         # Queue<T>
+    │   │   ├── LinkedList.pm    # LinkedList<T>
+    │   │   ├── KeyValuePair.pm  # KeyValuePair<TKey, TValue>
+    │   │   └── [enumerators]    # Supporting classes
+    │   ├── Concurrent/          # Thread-safe collections
+    │   │   ├── ConcurrentQueue.pm      # Thread-safe queue
+    │   │   ├── ConcurrentDictionary.pm # Thread-safe dictionary
+    │   │   ├── ConcurrentStack.pm      # Thread-safe stack
+    │   │   └── ConcurrentBag.pm        # Thread-safe bag
+    │   └── Specialized/         # Specialized collections
+    │       ├── INotifyCollectionChanged.pm
+    │       ├── NotifyCollectionChangedEventArgs.pm
+    │       └── NotifyCollectionChangedAction.pm
+    ├── ComponentModel/          # Data binding and events
+    │   ├── BindingList.pm       # Data-binding collection
+    │   ├── INotifyPropertyChanged.pm
+    │   ├── INotifyPropertyChanging.pm
+    │   ├── PropertyChangedEventArgs.pm
+    │   ├── PropertyChangingEventArgs.pm
+    │   └── CancelEventArgs.pm
+    ├── Delegate.pm              # Method pointer system
+    ├── Event.pm                 # Event management
+    ├── EventArgs.pm             # Base event arguments class
+    ├── Buffers/                 # Memory management
+    │   └── ArrayPool.pm         # Array pooling for efficiency
+    ├── Linq/                    # LINQ implementation
+    │   ├── SelectIterator.pm   
+    │   ├── WhereIterator.pm    
+    │   └── [other iterators]   
+    ├── IO/                      # File system operations
+    │   ├── File.pm             
+    │   ├── Directory.pm        
+    │   ├── Path.pm
+    │   ├── Stream.pm            # Base stream class
+    │   ├── TextReader.pm        # Text reading base class
+    │   ├── TextWriter.pm        # Text writing base class
+    │   ├── StreamReader.pm      # Stream-based text reader
+    │   └── StreamWriter.pm      # Stream-based text writer
+    ├── Text/                    # Text processing
+    │   ├── StringBuilder.pm     # Efficient string building
+    │   └── Encoding.pm          # Text encoding support
+    ├── Threading/               # Threading support
+    │   ├── Thread.pm            # Basic threading
+    │   ├── ThreadPool.pm        # Thread pool management
+    │   ├── WaitHandle.pm        # Base synchronization class
+    │   ├── EventWaitHandle.pm   # Event-based synchronization base
+    │   ├── Mutex.pm             # Mutual exclusion
+    │   ├── Semaphore.pm         # Counting semaphore
+    │   ├── AutoResetEvent.pm    # Auto-resetting event
+    │   ├── ManualResetEvent.pm  # Manual reset event
+    │   └── Tasks/               # Task Parallel Library
+    │       ├── Task.pm          # Asynchronous task operations
+    │       └── TaskAwaiter.pm   # Task awaiting support
+    ├── Random.pm                # Random number generation
+    ├── Windows/Forms/           # GUI components
+    │   ├── MessageBox.pm       
+    │   └── [dialog resources]  
+    └── Diagnostics/             # Debugging and diagnostics
+        ├── Stopwatch.pm        
+        └── Trace.pm            
 ```
 
-**Or use cpanm (if published to CPAN):**
-```bash
-cpanm Perl::NetFramework
-```
-
-### 🔧 Development Install
-```bash
-# Clone the repository for development
-git clone https://github.com/Hawkynt/Perl-NetFramework.git
-cd Perl-NetFramework
-
-# Install dependencies
-cpanm --installdeps .
-
-# Run tests
-perl tests/run_tests.pl
-# Or comprehensive test runner
-perl run_all_tests.pl
-```
-
-### 🔧 Core Dependencies
-- 🐪 **Perl 5.8+** (tested with Perl 5.8-5.36 on Linux, 5.14-5.36 on Windows)
-- 📦 **Core modules**: strict, warnings, Exporter, Scalar::Util, Filter::Simple
-
-### 🎨 Optional Dependencies
-- **🖥️ Tk**: Required for GUI components (MessageBox)
-- **🎨 Image::Xbm**: For icon processing in message boxes
-- **🌈 Term::ANSIColor**: For colored test output
-
-### 📦 Available Downloads
-- **📦 .tar.gz**: CPAN-compatible distribution
-- **📁 .zip**: Windows-friendly archive  
-- **📄 Source**: Complete source with Git history
-
-Visit my [**Releases Page**](https://github.com/Hawkynt/Perl-NetFramework/releases) for all download options.
-
-## Perl Interoperability Notes
+## 🐪 Perl interoperability notes
 
 When mixing this framework with plain Perl code or CPAN modules, keep these verified behaviors in mind. 🧩
 
@@ -973,7 +943,7 @@ if ($@ && ref($@) && $@->isa('System::Exception')) {
 
 `use Filter::CSharp;` transforms only the file that uses it. Plain Perl files (including other modules in your project) are never affected. ✅
 
-## 🛠️ Development and Testing
+## 🧪 Development and testing
 
 ### 🧪 Running the Test Suite
 
@@ -1219,7 +1189,14 @@ GitHub Actions automatically runs:
 - Line number preservation is critical for debugging transformed C# code
 - Tests document both working features and known limitations
 
-## 🏗️ Architecture Notes
+## 👯 Sister projects
+
+This project is part of a multi-language effort to bring .NET Framework functionality to various programming languages:
+
+- **🐪 [Perl-NetFramework](https://github.com/Hawkynt/Perl-NetFramework)** - .NET BCL implementation in Perl
+- **🐘 [PHP-NetFramework](https://github.com/Hawkynt/PHP-NetFramework)** - .NET BCL implementation in PHP
+
+## 🏗️ Architecture
 
 - **🎯 Object-Oriented Design**: All classes inherit from System::Object
 - **🔗 Interface Simulation**: Multiple inheritance used to simulate .NET interfaces
@@ -1228,14 +1205,67 @@ GitHub Actions automatically runs:
 - **🛡️ Exception Safety**: Comprehensive exception handling throughout the framework
 - **🏷️ Namespace Aliasing**: Short aliases available (e.g., `String` instead of `System::String`)
 
-## 🤝 Sister Projects
+## 🔌 Dependencies
 
-This project is part of a multi-language effort to bring .NET Framework functionality to various programming languages:
+### 📥 Quick Install (Recommended)
 
-- **🐪 [Perl-NetFramework](https://github.com/Hawkynt/Perl-NetFramework)** - .NET BCL implementation in Perl
-- **🐘 [PHP-NetFramework](https://github.com/Hawkynt/PHP-NetFramework)** - .NET BCL implementation in PHP
+**Download the latest release:**
+```bash
+# Download from GitHub Releases
+wget https://github.com/Hawkynt/Perl-NetFramework/releases/latest/download/Perl-NetFramework-1.00.tar.gz
+tar -xzf Perl-NetFramework-1.00.tar.gz
+cd Perl-NetFramework-1.00
 
-## 📝 Contributing
+# Install using standard Perl tools
+perl Makefile.PL
+make test
+make install
+```
+
+**Or use cpanm (if published to CPAN):**
+```bash
+cpanm Perl::NetFramework
+```
+
+### 🔧 Development Install
+```bash
+# Clone the repository for development
+git clone https://github.com/Hawkynt/Perl-NetFramework.git
+cd Perl-NetFramework
+
+# Install dependencies
+cpanm --installdeps .
+
+# Run tests
+perl tests/run_tests.pl
+# Or comprehensive test runner
+perl run_all_tests.pl
+```
+
+### 🔧 Core Dependencies
+- 🐪 **Perl 5.8+** (tested with Perl 5.8-5.36 on Linux, 5.14-5.36 on Windows)
+- 📦 **Core modules**: strict, warnings, Exporter, Scalar::Util, Filter::Simple
+
+### 🎨 Optional Dependencies
+- **🖥️ Tk**: Required for GUI components (MessageBox)
+- **🎨 Image::Xbm**: For icon processing in message boxes
+- **🌈 Term::ANSIColor**: For colored test output
+
+### 📦 Available Downloads
+- **📦 .tar.gz**: CPAN-compatible distribution
+- **📁 .zip**: Windows-friendly archive  
+- **📄 Source**: Complete source with Git history
+
+Visit my [**Releases Page**](https://github.com/Hawkynt/Perl-NetFramework/releases) for all download options.
+
+## 🛠️ Building
+
+```bash
+prove -r t/          # the test suite
+perl -c System.pm    # syntax check
+```
+
+## 🤝 Contributing
 
 This project follows .NET naming conventions and design patterns. When contributing:
 
